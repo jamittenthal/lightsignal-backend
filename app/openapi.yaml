@@ -3,7 +3,7 @@ info:
   title: LightSignal Public Actions
   version: "1.0.0"
 servers:
-  - url: https://YOUR_RENDER_URL
+  - url: https://lightsignal-backend.onrender.com
 paths:
   /api/overview:
     post:
