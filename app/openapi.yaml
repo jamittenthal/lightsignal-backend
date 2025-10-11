@@ -1,0 +1,158 @@
+openapi: 3.1.0
+info:
+  title: LightSignal Public Actions
+  version: "1.0.0"
+servers:
+  - url: https://YOUR_RENDER_URL
+paths:
+  /api/overview:
+    post:
+      operationId: fetchFinancialOverview
+      summary: Get overview KPIs, peer benchmarks, and insights
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [company_id]
+              properties:
+                company_id:
+                  type: string
+                  example: "demo"
+                periods:
+                  type: integer
+                  default: 12
+      responses:
+        "200":
+          description: Overview response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OverviewResponse"
+  /api/scenario:
+    post:
+      operationId: runScenario
+      summary: Run a simple what-if scenario and return Base vs Scenario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScenarioRequest"
+      responses:
+        "200":
+          description: Scenario result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScenarioResponse"
+
+components:
+  schemas:
+    Profile:
+      type: object
+      properties:
+        company_id: { type: string }
+        name: { type: string }
+        naics: { type: string }
+        size: { type: string }
+        region: { type: string }
+        mode: { type: string, description: "demo|live" }
+
+    MonthlySeries:
+      type: object
+      properties:
+        month: { type: string }
+        revenue: { type: number }
+        cogs: { type: number }
+        opex: { type: number }
+        cash: { type: number }
+
+    FinancialsPayload:
+      type: object
+      properties:
+        profile: { $ref: "#/components/schemas/Profile" }
+        series:
+          type: array
+          items: { $ref: "#/components/schemas/MonthlySeries" }
+        provenance:
+          type: object
+          additionalProperties: true
+
+    KPIBlock:
+      type: object
+      properties:
+        revenue_mtd: { type: number, nullable: true }
+        net_income_mtd: { type: number, nullable: true }
+        margin_pct: { type: number, nullable: true }
+        cash_available: { type: number, nullable: true }
+        runway_months: { type: number, nullable: true }
+        confidence: { type: number }
+
+    Benchmark:
+      type: object
+      properties:
+        metric: { type: string }
+        value: { type: number }
+        peer_percentile: { type: number }
+
+    OverviewResponse:
+      type: object
+      properties:
+        financials: { $ref: "#/components/schemas/FinancialsPayload" }
+        kpis: { $ref: "#/components/schemas/KPIBlock" }
+        benchmarks:
+          type: array
+          items: { $ref: "#/components/schemas/Benchmark" }
+        insights:
+          type: array
+          items: { type: string }
+
+    ScenarioInputs:
+      type: object
+      properties:
+        price_change_pct: { type: number, default: 0 }
+        headcount_delta: { type: integer, default: 0 }
+        loan_amount: { type: number, default: 0 }
+        interest_rate: { type: number, default: 0 }
+        capex_amount: { type: number, default: 0 }
+
+    ScenarioRequest:
+      type: object
+      required: [company_id, name, inputs]
+      properties:
+        company_id: { type: string }
+        name: { type: string }
+        inputs: { $ref: "#/components/schemas/ScenarioInputs" }
+
+    ScenarioChart:
+      type: object
+      properties:
+        name: { type: string }
+        points:
+          type: array
+          items:
+            type: object
+            additionalProperties:
+              type: number
+
+    ScenarioBlock:
+      type: object
+      properties:
+        revenue: { type: number }
+        net_income: { type: number }
+        margin_pct: { type: number }
+        runway_months: { type: number }
+
+    ScenarioResponse:
+      type: object
+      properties:
+        base: { $ref: "#/components/schemas/ScenarioBlock" }
+        scenario: { $ref: "#/components/schemas/ScenarioBlock" }
+        visuals:
+          type: array
+          items: { $ref: "#/components/schemas/ScenarioChart" }
+        insights:
+          type: array
+          items: { type: string }
