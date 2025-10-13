@@ -1,119 +1,68 @@
+import os
+import time
 from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
-from pathlib import Path
-import json
+from fastapi.responses import JSONResponse
+from openai import OpenAI
+from dotenv import load_dotenv
 
-app = FastAPI(title="LightSignal API", version="1.0.0")
+load_dotenv()
+app = FastAPI()
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# --- CORS setup ---
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # You can tighten this later
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# --- DEMO ENDPOINTS ---
-
-@app.post("/api/overview")
-async def fetch_overview(request: Request):
-    """
-    Returns demo KPIs, benchmarks, and insights.
-    In production this would call the Orchestrator or Finance Analyst agent.
-    """
-    body = await request.json()
-    company_id = body.get("company_id", "demo")
-
-    response = {
-        "financials": {
-            "profile": {
-                "company_id": company_id,
-                "name": "Demo Manufacturing Co",
-                "naics": "332710",
-                "size": "small",
-                "region": "Midwest",
-                "mode": "demo",
-            },
-            "provenance": {
-                "source": "quickbooks_demo",
-                "confidence": 0.8,
-            },
-        },
-        "kpis": {
-            "revenue_mtd": 31666.67,
-            "net_income_mtd": -3166.67,
-            "margin_pct": -10.0,
-            "cash_available": 125000.00,
-            "runway_months": 9.2,
-            "confidence": 0.8,
-        },
-        "benchmarks": [
-            {"metric": "Gross Margin %", "value": 38.5, "peer_percentile": 0.45},
-            {"metric": "Revenue Growth YoY", "value": 6.1, "peer_percentile": 0.53},
-            {"metric": "DSO (days)", "value": 42, "peer_percentile": 0.62},
-        ],
-        "insights": [
-            "Margins are down 10% month-over-month, mainly due to rising COGS.",
-            "Cash runway remains healthy at 9.2 months.",
-            "Revenue growth slightly outperforms industry peers.",
-        ],
-    }
-
-    return JSONResponse(content=response)
-
-
-@app.post("/api/scenario")
-async def run_scenario(request: Request):
-    """
-    Minimal local simulation for Scenario Lab.
-    """
-    body = await request.json()
-    inputs = body.get("inputs", {})
-
-    price_change_pct = float(inputs.get("price_change_pct", 0))
-    headcount_delta = float(inputs.get("headcount_delta", 0))
-
-    base = {"revenue": 31666.67, "net_income": -3166.67, "margin_pct": -10.0, "runway_months": 9.2}
-    scenario = {
-        "revenue": base["revenue"] * (1 + price_change_pct / 100),
-        "net_income": base["net_income"] + (headcount_delta * -3500),
-        "margin_pct": base["margin_pct"] + (price_change_pct * 0.5),
-        "runway_months": max(0, base["runway_months"] - (headcount_delta * 0.3)),
-    }
-
-    visuals = [
-        {
-            "name": "Revenue vs Net Income",
-            "points": [
-                {"metric": "Revenue", "Base": base["revenue"], "Scenario": scenario["revenue"]},
-                {"metric": "Net Income", "Base": base["net_income"], "Scenario": scenario["net_income"]},
-            ],
-        }
-    ]
-
-    insights = [
-        f"Revenue adjusted by {price_change_pct}%.",
-        f"Headcount change of {headcount_delta} impacts runway.",
-    ]
-
-    response = {"base": base, "scenario": scenario, "visuals": visuals, "insights": insights}
-    return JSONResponse(content=response)
-
-
-# --- Health check endpoint ---
 @app.get("/health")
-async def health():
+def health():
     return {"ok": True}
 
+# === ASSISTANT CALLER UTILITY ===
+def run_assistant(assistant_id: str, prompt: str):
+    """Create a thread, run the assistant, and return the text output."""
+    thread = client.beta.threads.create(messages=[{"role": "user", "content": prompt}])
+    run = client.beta.threads.runs.create(thread_id=thread.id, assistant_id=assistant_id)
 
-# --- NEW: Expose OpenAPI spec for GPT Actions ---
-@app.get("/ai/openapi.yaml", include_in_schema=False)
-async def openapi_file():
-    """
-    Serves the OpenAPI spec for GPT Actions.
-    """
-    p = Path(__file__).parent / "openapi.yaml"
-    return Response(p.read_text(encoding="utf-8"), media_type="text/yaml")
+    # Wait for the run to complete
+    while True:
+        run_status = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
+        if run_status.status == "completed":
+            break
+        elif run_status.status in ["failed", "cancelled"]:
+            raise Exception(f"Run failed: {run_status.status}")
+        time.sleep(1)
 
+    messages = client.beta.threads.messages.list(thread_id=thread.id)
+    # Return only the text value
+    return messages.data[0].content[0].text.value
+
+# === ROUTES ===
+
+@app.post("/api/orchestrator")
+async def orchestrator(request: Request):
+    """Call the Orchestrator Assistant"""
+    data = await request.json()
+    prompt = data.get("prompt", "render_financial_overview for company_id=demo")
+    try:
+        response = run_assistant(os.getenv("ORCHESTRATOR_ID"), prompt)
+        return JSONResponse(content={"result": response})
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@app.post("/api/finance")
+async def finance(request: Request):
+    """Call the Finance Analyst Assistant"""
+    data = await request.json()
+    prompt = data.get("prompt", "analyze company financials")
+    try:
+        response = run_assistant(os.getenv("FINANCE_ANALYST_ID"), prompt)
+        return JSONResponse(content={"result": response})
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@app.post("/api/research")
+async def research(request: Request):
+    """Call the Research Scout Assistant"""
+    data = await request.json()
+    prompt = data.get("prompt", "latest industry signals for small businesses")
+    try:
+        response = run_assistant(os.getenv("RESEARCH_SCOUT_ID"), prompt)
+        return JSONResponse(content={"result": response})
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
