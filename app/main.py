@@ -1,11 +1,17 @@
 import os
 import time
 import json
-from fastapi import FastAPI, Request
+from typing import List, Optional
+from fastapi import FastAPI, Request, Query
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from openai import OpenAI
 from dotenv import load_dotenv
+
+# local modules
+from .demo_financials import get_demo_financials, get_demo_profile
+from .finance_models import compute_all_kpis, default_benchmarks
 
 load_dotenv()
 
@@ -34,26 +40,37 @@ client = OpenAI(
 def health():
     return {"ok": True, "project": os.getenv("OPENAI_PROJECT")}
 
+# ---------- Helpers for Assistants ----------
+def _wait_for_run(thread_id: str, run_id: str):
+    while True:
+        status = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run_id)
+        if status.status == "completed":
+            return
+        if status.status in ["failed", "cancelled", "expired"]:
+            raise Exception(f"Run ended with status: {status.status}")
+        time.sleep(1)
+
+def _latest_text(thread_id: str) -> str:
+    messages = client.beta.threads.messages.list(thread_id=thread_id)
+    return messages.data[0].content[0].text.value
+
+def _parse_json_or_none(raw: str) -> Optional[dict]:
+    try:
+        return json.loads(raw)
+    except Exception:
+        cleaned = raw.strip().strip("`")
+        try:
+            return json.loads(cleaned)
+        except Exception:
+            return None
+
 def run_assistant(assistant_id: str, prompt: str) -> str:
     thread = client.beta.threads.create(messages=[{"role": "user", "content": prompt}])
     run = client.beta.threads.runs.create(thread_id=thread.id, assistant_id=assistant_id)
-    while True:
-        status = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
-        if status.status == "completed":
-            break
-        if status.status in ["failed", "cancelled"]:
-            raise Exception(f"Run failed: {status.status}")
-        time.sleep(1)
-    messages = client.beta.threads.messages.list(thread_id=thread.id)
-    return messages.data[0].content[0].text.value  # raw JSON string from the assistant
+    _wait_for_run(thread.id, run.id)
+    return _latest_text(thread.id)
 
-def parse_json_or_bust(raw: str):
-    try:
-        return json.loads(raw)
-    except json.JSONDecodeError:
-        cleaned = raw.strip().strip("`")
-        return json.loads(cleaned)
-
+# ---------- Existing single-prompt endpoints ----------
 @app.post("/api/orchestrator")
 async def orchestrator(request: Request):
     body = await request.json()
@@ -61,8 +78,8 @@ async def orchestrator(request: Request):
     try:
         asst_id = os.getenv("ORCHESTRATOR_ID")
         raw = run_assistant(asst_id, prompt)
-        parsed = parse_json_or_bust(raw)
-        return JSONResponse(content=parsed)  # return proper JSON object
+        parsed = _parse_json_or_none(raw)
+        return JSONResponse(content=parsed if parsed is not None else {"text": raw})
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
@@ -73,8 +90,8 @@ async def finance(request: Request):
     try:
         asst_id = os.getenv("FINANCE_ANALYST_ID")
         raw = run_assistant(asst_id, prompt)
-        parsed = parse_json_or_bust(raw)
-        return JSONResponse(content=parsed)
+        parsed = _parse_json_or_none(raw)
+        return JSONResponse(content=parsed if parsed is not None else {"text": raw})
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
@@ -85,11 +102,69 @@ async def research(request: Request):
     try:
         asst_id = os.getenv("RESEARCH_SCOUT_ID")
         raw = run_assistant(asst_id, prompt)
-        parsed = parse_json_or_bust(raw)
-        return JSONResponse(content=parsed)
+        parsed = _parse_json_or_none(raw)
+        return JSONResponse(content=parsed if parsed is not None else {"text": raw})
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
+# ---------- NEW: Chat endpoint for Scenarios ----------
+class ChatMessage(BaseModel):
+    role: str  # "user" | "assistant"
+    content: str
+
+class ChatRequest(BaseModel):
+    messages: List[ChatMessage]
+
+@app.post("/api/orchestrator_chat")
+async def orchestrator_chat(req: ChatRequest):
+    try:
+        asst_id = os.getenv("ORCHESTRATOR_ID")
+        thread = client.beta.threads.create(messages=[m.dict() for m in req.messages])
+        run = client.beta.threads.runs.create(thread_id=thread.id, assistant_id=asst_id)
+        _wait_for_run(thread.id, run.id)
+        text = _latest_text(thread.id)
+        parsed = _parse_json_or_none(text)
+        return JSONResponse(content={"message": {"role": "assistant", "content": text}, "parsed": parsed})
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+# ---------- NEW: Demo-Mode Financial Engine ----------
+@app.get("/api/finance/get_financials")
+def api_get_financials(company_id: str = Query("demo")):
+    """
+    Returns normalized financials and a simple business profile.
+    Structure:
+    {
+      "profile": {...},
+      "pl": [{"month":"2024-01","revenue":...,"cogs":...,"opex":...,"other":...}, ... 12 months],
+      "bs": {"cash":..., "receivables":..., "inventory":..., "current_liab":..., "debt":..., "equity":...},
+      "cf": {"operating":..., "investing":..., "financing":...}
+    }
+    """
+    profile = get_demo_profile(company_id)
+    pl, bs, cf = get_demo_financials(company_id)
+    return {"profile": profile, "pl": pl, "bs": bs, "cf": cf}
+
+@app.get("/api/finance/benchmarks")
+def api_benchmarks(company_id: str = Query("demo")):
+    """
+    Returns peer benchmark percentiles for key metrics (mock).
+    """
+    profile = get_demo_profile(company_id)
+    b = default_benchmarks(profile)
+    return {"profile": profile, "benchmarks": b}
+
+@app.get("/api/finance/compute_kpis")
+def api_compute_kpis(company_id: str = Query("demo")):
+    """
+    Computes KPIs/ratios from normalized demo financials + profile.
+    """
+    profile = get_demo_profile(company_id)
+    pl, bs, cf = get_demo_financials(company_id)
+    kpis = compute_all_kpis(profile, pl, bs, cf)
+    return {"profile": profile, "kpis": kpis}
+
+# ---------- Debug ----------
 @app.get("/api/debug/assistants")
 def debug_assistants():
     try:
