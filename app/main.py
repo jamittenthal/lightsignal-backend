@@ -1,16 +1,21 @@
+import os
+import time
+import json
 from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from openai import OpenAI
-from pydantic import BaseModel
-import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = FastAPI()
 
-# ✅ CORS setup — allows frontend (Vercel) to call backend (Render)
+# CORS: allow frontend (Vercel) to call backend (Render)
 allowed_origins = [
     "https://lightsignal-frontend.vercel.app",
     "https://*.vercel.app",
-    "http://localhost:3000"
+    "http://localhost:3000",
 ]
 app.add_middleware(
     CORSMiddleware,
@@ -20,30 +25,76 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ✅ API Key and Project ID (keep these secret in Render env vars)
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_PROJECT = os.getenv("OPENAI_PROJECT")
-
-client = OpenAI(api_key=OPENAI_API_KEY, project=OPENAI_PROJECT)
-
-class PromptRequest(BaseModel):
-    prompt: str
+client = OpenAI(
+    api_key=os.getenv("OPENAI_API_KEY"),
+    project=os.getenv("OPENAI_PROJECT"),
+)
 
 @app.get("/health")
-async def health():
-    return {"ok": True, "project": OPENAI_PROJECT}
+def health():
+    return {"ok": True, "project": os.getenv("OPENAI_PROJECT")}
+
+def run_assistant(assistant_id: str, prompt: str) -> str:
+    thread = client.beta.threads.create(messages=[{"role": "user", "content": prompt}])
+    run = client.beta.threads.runs.create(thread_id=thread.id, assistant_id=assistant_id)
+    while True:
+        status = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
+        if status.status == "completed":
+            break
+        if status.status in ["failed", "cancelled"]:
+            raise Exception(f"Run failed: {status.status}")
+        time.sleep(1)
+    messages = client.beta.threads.messages.list(thread_id=thread.id)
+    return messages.data[0].content[0].text.value  # raw JSON string from the assistant
+
+def parse_json_or_bust(raw: str):
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        cleaned = raw.strip().strip("`")
+        return json.loads(cleaned)
 
 @app.post("/api/orchestrator")
-async def orchestrator(request: PromptRequest):
+async def orchestrator(request: Request):
+    body = await request.json()
+    prompt = body.get("prompt", "render_financial_overview for company_id=demo")
     try:
-        response = client.chat.completions.create(
-            model="gpt-4.1",
-            messages=[
-                {"role": "system", "content": "You are the LightSignal Orchestrator assistant."},
-                {"role": "user", "content": request.prompt}
-            ],
-            response_format={"type": "json_object"}
-        )
-        return response.choices[0].message
+        asst_id = os.getenv("ORCHESTRATOR_ID")
+        raw = run_assistant(asst_id, prompt)
+        parsed = parse_json_or_bust(raw)
+        return JSONResponse(content=parsed)  # return proper JSON object
     except Exception as e:
-        return {"error": str(e)}
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@app.post("/api/finance")
+async def finance(request: Request):
+    body = await request.json()
+    prompt = body.get("prompt", "analyze company financials")
+    try:
+        asst_id = os.getenv("FINANCE_ANALYST_ID")
+        raw = run_assistant(asst_id, prompt)
+        parsed = parse_json_or_bust(raw)
+        return JSONResponse(content=parsed)
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@app.post("/api/research")
+async def research(request: Request):
+    body = await request.json()
+    prompt = body.get("prompt", "latest SMB signals")
+    try:
+        asst_id = os.getenv("RESEARCH_SCOUT_ID")
+        raw = run_assistant(asst_id, prompt)
+        parsed = parse_json_or_bust(raw)
+        return JSONResponse(content=parsed)
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@app.get("/api/debug/assistants")
+def debug_assistants():
+    try:
+        listing = client.beta.assistants.list(limit=10)
+        visible = [{"id": a.id, "name": a.name} for a in listing.data]
+        return {"project": os.getenv("OPENAI_PROJECT"), "assistants": visible}
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
