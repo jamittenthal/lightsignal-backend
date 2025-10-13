@@ -5,21 +5,28 @@ from fastapi.responses import JSONResponse
 from openai import OpenAI
 from dotenv import load_dotenv
 
+# Load environment variables
 load_dotenv()
+
 app = FastAPI()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# Initialize OpenAI client with both API key and Project ID
+client = OpenAI(
+    api_key=os.getenv("OPENAI_API_KEY"),
+    project=os.getenv("OPENAI_PROJECT")  # <-- This ensures it uses the right project
+)
 
 @app.get("/health")
 def health():
+    """Simple health check endpoint"""
     return {"ok": True}
 
-# === ASSISTANT CALLER UTILITY ===
+# === Utility to call an Assistant ===
 def run_assistant(assistant_id: str, prompt: str):
-    """Create a thread, run the assistant, and return the text output."""
+    """Create a thread, run the assistant, wait for completion, and return its text output."""
     thread = client.beta.threads.create(messages=[{"role": "user", "content": prompt}])
     run = client.beta.threads.runs.create(thread_id=thread.id, assistant_id=assistant_id)
 
-    # Wait for the run to complete
     while True:
         run_status = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
         if run_status.status == "completed":
@@ -29,8 +36,8 @@ def run_assistant(assistant_id: str, prompt: str):
         time.sleep(1)
 
     messages = client.beta.threads.messages.list(thread_id=thread.id)
-    # Return only the text value
     return messages.data[0].content[0].text.value
+
 
 # === ROUTES ===
 
@@ -45,6 +52,7 @@ async def orchestrator(request: Request):
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
+
 @app.post("/api/finance")
 async def finance(request: Request):
     """Call the Finance Analyst Assistant"""
@@ -55,6 +63,7 @@ async def finance(request: Request):
         return JSONResponse(content={"result": response})
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
+
 
 @app.post("/api/research")
 async def research(request: Request):
