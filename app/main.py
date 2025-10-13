@@ -10,68 +10,70 @@ load_dotenv()
 
 app = FastAPI()
 
-# Initialize OpenAI client with both API key and Project ID
+# Initialize OpenAI client using your project + key
 client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY"),
-    project=os.getenv("OPENAI_PROJECT")  # <-- This ensures it uses the right project
+    project=os.getenv("OPENAI_PROJECT")  # ensures it uses the correct project
 )
 
 @app.get("/health")
 def health():
-    """Simple health check endpoint"""
-    return {"ok": True}
+    """Simple health check."""
+    return {"ok": True, "project": os.getenv("OPENAI_PROJECT")}
 
-# === Utility to call an Assistant ===
 def run_assistant(assistant_id: str, prompt: str):
-    """Create a thread, run the assistant, wait for completion, and return its text output."""
+    """Create thread, run assistant, wait for completion, return text output."""
     thread = client.beta.threads.create(messages=[{"role": "user", "content": prompt}])
     run = client.beta.threads.runs.create(thread_id=thread.id, assistant_id=assistant_id)
-
     while True:
-        run_status = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
-        if run_status.status == "completed":
+        status = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
+        if status.status == "completed":
             break
-        elif run_status.status in ["failed", "cancelled"]:
-            raise Exception(f"Run failed: {run_status.status}")
+        if status.status in ["failed", "cancelled"]:
+            raise Exception(f"Run failed: {status.status}")
         time.sleep(1)
-
     messages = client.beta.threads.messages.list(thread_id=thread.id)
     return messages.data[0].content[0].text.value
 
-
-# === ROUTES ===
-
 @app.post("/api/orchestrator")
 async def orchestrator(request: Request):
-    """Call the Orchestrator Assistant"""
     data = await request.json()
     prompt = data.get("prompt", "render_financial_overview for company_id=demo")
     try:
-        response = run_assistant(os.getenv("ORCHESTRATOR_ID"), prompt)
-        return JSONResponse(content={"result": response})
+        asst_id = os.getenv("ORCHESTRATOR_ID")
+        output = run_assistant(asst_id, prompt)
+        return JSONResponse(content={"assistant_id": asst_id, "result": output})
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
-
 
 @app.post("/api/finance")
 async def finance(request: Request):
-    """Call the Finance Analyst Assistant"""
     data = await request.json()
     prompt = data.get("prompt", "analyze company financials")
     try:
-        response = run_assistant(os.getenv("FINANCE_ANALYST_ID"), prompt)
-        return JSONResponse(content={"result": response})
+        asst_id = os.getenv("FINANCE_ANALYST_ID")
+        output = run_assistant(asst_id, prompt)
+        return JSONResponse(content={"assistant_id": asst_id, "result": output})
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
-
 @app.post("/api/research")
 async def research(request: Request):
-    """Call the Research Scout Assistant"""
     data = await request.json()
-    prompt = data.get("prompt", "latest industry signals for small businesses")
+    prompt = data.get("prompt", "latest SMB signals")
     try:
-        response = run_assistant(os.getenv("RESEARCH_SCOUT_ID"), prompt)
-        return JSONResponse(content={"result": response})
+        asst_id = os.getenv("RESEARCH_SCOUT_ID")
+        output = run_assistant(asst_id, prompt)
+        return JSONResponse(content={"assistant_id": asst_id, "result": output})
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@app.get("/api/debug/assistants")
+def debug_assistants():
+    """List assistants visible to this project/key for debugging."""
+    try:
+        listing = client.beta.assistants.list(limit=10)
+        visible = [{"id": a.id, "name": a.name} for a in listing.data]
+        return {"project": os.getenv("OPENAI_PROJECT"), "assistants": visible}
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
