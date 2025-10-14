@@ -9,14 +9,13 @@ from .services.forecast import compute_kpis_and_forecast
 from .services.benchmarks import vector_benchmarks
 from .services.insights import write_insights
 
-# NEW: import the intent router
 from .intent import router as intent_router
 
 app = FastAPI(title="LightSignal API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # tighten to your Vercel domain later
+    allow_origins=["*"],  # tighten later
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -42,10 +41,9 @@ async def api_scenario(req: ScenarioRequest):
     insights = write_insights(result, bench)
     return ScenarioResponse(base=result.base, scenario=result.scenario, visuals=result.visuals, insights=insights)
 
-# Health check (unchanged)
 @app.get("/health")
 async def health():
     return {"ok": True}
 
-# NEW: mount the unified intent router (opportunities lives here)
+# Mount the unified intent router
 app.include_router(intent_router)
