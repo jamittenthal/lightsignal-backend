@@ -1,187 +1,115 @@
 # app/intent.py
-from typing import Any, Dict, List
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from fastapi import APIRouter
-from fastapi.responses import JSONResponse
-from .agents import call_orchestrator, call_analyst, call_scout
-import json
+from typing import Any, Dict, List, Optional
 
 router = APIRouter()
 
-class IntentPayload(BaseModel):
-    intent: str                 # e.g., "opportunities", "payroll_hiring"
-    company_id: str = "demo"
-    input: Dict[str, Any] = {}
+# ---------- Schemas for request/response ----------
 
-# ---------- Utilities ----------
+class IntentInput(BaseModel):
+    # free-form; we pass region, lookback_days, etc. from the UI
+    __root__: Dict[str, Any] = {}
 
-def _json_or_empty(s: str) -> Dict[str, Any]:
-    try:
-        if not isinstance(s, str):
-            return {}
-        if "```" in s:
-            s = s.replace("```json", "```")
-            parts = s.split("```")
-            for p in parts:
-                if "{" in p and "}" in p:
-                    j = p[p.index("{"): p.rfind("}")+1]
-                    return json.loads(j)
-        return json.loads(s)
-    except Exception:
-        return {}
+class IntentRequest(BaseModel):
+    intent: str
+    company_id: Optional[str] = "demo"
+    input: Optional[Dict[str, Any]] = None
 
-def _safe_envelope(cid: str, inputs: Dict[str, Any]) -> Dict[str, Any]:
-    return {
-        "scenario_type": "general_question",
-        "base": {"kpis": {}},
-        "scenario": {"kpis": {}},
-        "delta": {"kpis": {}},
-        "verdict": {"affordable": True, "summary": "OK"},
-        "insights": ["(default envelope)"],
-        "benchmarks": [],
-        "visuals": [],
-        "assumptions": {"company_id": cid, "inputs": inputs},
+# ---------- Normalizers and demo builders ----------
+
+def _normalize_opportunities(result: Dict[str, Any]) -> Dict[str, Any]:
+    """Make sure keys match your UI's expectations."""
+    k = result.get("kpis") or {}
+    items = result.get("items") or []
+    fixed_items: List[Dict[str, Any]] = []
+    for it in items:
+        fixed_items.append({
+            "title": it.get("title") or it.get("name") or "Untitled",
+            "category": it.get("category") or it.get("kind") or "other",
+            "date": it.get("date"),
+            "deadline": it.get("deadline") or it.get("due"),
+            "fit_score": it.get("fit_score"),
+            "roi_est": it.get("roi_est") or it.get("roi"),
+            "weather": it.get("weather"),
+            "link": it.get("link") or it.get("url"),
+        })
+    result["kpis"] = {
+        "active_count": k.get("active_count"),
+        "potential_value": k.get("potential_value"),
+        "avg_fit_score": k.get("avg_fit_score"),
+        "event_readiness": k.get("event_readiness"),
+        "historical_roi": k.get("historical_roi"),
+    }
+    result["items"] = fixed_items
+    return result
+
+def _build_demo_opportunities(region: str) -> Dict[str, Any]:
+    """Deterministic demo payload that matches your UI types.
+    Swap this later to call your Orchestrator/Research Scout Assistant.
+    """
+    # KPIs (rough demo numbers)
+    kpis = {
+        "active_count": 5,
+        "potential_value": 320000,
+        "avg_fit_score": 0.76,
+        "event_readiness": 0.68,
+        "historical_roi": 0.21,
     }
 
-# ---------- Prompt builders (contracts) ----------
+    insights = [
+        f"Severe heat forecast expected near {region} may boost HVAC service demand in the next 10 days.",
+        "Local utility efficiency rebates open for SMB retrofits; average award $3k–$12k.",
+        "Two city RFPs closing within 14 days; consider partnering to improve award odds.",
+    ]
 
-def prompt_header(company_id: str) -> str:
-    return (
-        "You are part of LightSignal, an SMB decision copilot.\n"
-        f"Company context: company_id={company_id} (assume HVAC/Services unless otherwise specified).\n"
-        "Return STRICT JSON only. No prose. No markdown. No code fences.\n"
-    )
+    items = [
+        {
+            "title": "City Facilities HVAC Preventive Contract",
+            "category": "bid",
+            "date": "2025-10-18",
+            "deadline": "2025-10-25",
+            "fit_score": 0.83,
+            "roi_est": 0.34,
+            "link": "https://example.gov/rfp/hvac-preventive",
+        },
+        {
+            "title": "Austin Energy Small Business Efficiency Rebate",
+            "category": "grant",
+            "deadline": "2025-11-05",
+            "fit_score": 0.71,
+            "roi_est": 0.28,
+            "link": "https://austinenergy.com/rebates/smb",
+        },
+        {
+            "title": "Regional Contractor Networking Night",
+            "category": "event",
+            "date": "2025-10-22",
+            "fit_score": 0.62,
+            "roi_est": 0.12,
+            "link": "https://example.com/events/regional-contractors",
+        },
+        {
+            "title": "Supplier Bulk Filter Promo (Q4)",
+            "category": "partner",
+            "deadline": "2025-10-30",
+            "fit_score": 0.66,
+            "roi_est": 0.17,
+            "link": "https://supplier.example.com/promos/q4-filters",
+        },
+        {
+            "title": "Hot Weather Alert — Load Spike",
+            "category": "weather",
+            "date": "2025-10-20",
+            "fit_score": 0.80,
+            "roi_est": 0.10,
+            "weather": "Heat index >100°F",
+        },
+    ]
 
-def prompt_contract_generic(intent: str, company_id: str, inputs: Dict[str, Any]) -> str:
-    """
-    Generic contract: ensures 'insights' always exists so UI renders.
-    """
-    return (
-        prompt_header(company_id)
-        + "Task: Respond to the intent and inputs with concise, decision-ready analysis.\n"
-        f"Intent: {intent}\n"
-        f"Inputs: {json.dumps(inputs)}\n\n"
-        "JSON schema (STRICT):\n"
-        "{\n"
-        '  "kpis": { "any_metric": number, "...": number },\n'
-        '  "insights": ["short actionable bullet", "..."],\n'
-        '  "benchmarks": [{"metric":"string","value":number,"peer_percentile":number}],\n'
-        '  "visuals": [{"type":"bar|line","title":"string","labels":[...],"values":[...]}],\n'
-        '  "assumptions": {"company_id":"string","inputs":{}}\n'
-        "}\n"
-        "Constraints: Keep numbers reasonable; if something is unknown, omit it.\n"
-    )
-
-def prompt_contract_opportunities(company_id: str, inputs: Dict[str, Any]) -> str:
-    """
-    Contract for the Opportunities tab: always return insights + items.
-    """
-    return (
-        prompt_header(company_id)
-        + "Task: Find near-term business opportunities and risks (grants/events/bids/weather-driven demand spikes/partner leads).\n"
-        f"Inputs: {json.dumps(inputs)}\n\n"
-        "JSON schema (STRICT):\n"
-        "{\n"
-        '  "kpis": {\n'
-        '    "active_count": number,\n'
-        '    "potential_value": number,\n'
-        '    "avg_fit_score": number,\n'
-        '    "event_readiness": number,\n'
-        '    "historical_roi": number\n'
-        "  },\n"
-        '  "insights": ["short actionable bullet", "..."],\n'
-        '  "items": [\n'
-        "    {\n"
-        '      "title":"string",\n'
-        '      "category":"grant|event|bid|partner|weather|lead",\n'
-        '      "date":"YYYY-MM-DD",\n'
-        '      "deadline":"YYYY-MM-DD",\n'
-        '      "fit_score": number,\n'
-        '      "roi_est": number,\n'
-        '      "weather": "optional string if weather-related",\n'
-        '      "link":"optional url"\n'
-        "    }\n"
-        "  ],\n"
-        '  "benchmarks": [{"metric":"string","value":number,"peer_percentile":number}],\n'
-        '  "visuals": [{"type":"bar|line","title":"string","labels":[...],"values":[...]}],\n'
-        '  "assumptions": {"company_id":"string","inputs":{}}\n'
-        "}\n"
-        "Constraints: No markdown. No extra keys. Dates in ISO format if used.\n"
-    )
-
-def build_prompt(intent: str, company_id: str, inputs: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Returns dict with which agent to call and the exact text to send.
-    """
-    i = intent.lower().strip()
-
-    # Map intents to agents + contracts
-    if i in ("opportunities",):
-        return {
-            "agent": "scout",
-            "text": prompt_contract_opportunities(company_id, inputs),
-        }
-
-    elif i in (
-        "financial_overview", "debt_management_advisor", "payroll_hiring",
-        "tax_optimization", "business_health", "asset_management",
-        "inventory", "multilocation_inventory", "success_planning",
-    ):
-        return {
-            "agent": "analyst",
-            "text": prompt_contract_generic(i, company_id, inputs),
-        }
-
-    elif i.startswith("scenario_"):
-        return {
-            "agent": "orchestrator",
-            "text": prompt_contract_generic(i, company_id, inputs),
-        }
-
-    # default route → orchestrator with generic contract
-    return {
-        "agent": "orchestrator",
-        "text": prompt_contract_generic(i, company_id, inputs),
-    }
-
-# ---------- Route ----------
-
-@router.post("/api/intent")
-def route_intent(payload: IntentPayload):
-    intent = (payload.intent or "").strip().lower()
-    cid = payload.company_id
-    inputs = payload.input or {}
-
-    try:
-        plan = build_prompt(intent, cid, inputs)
-        text = plan["text"]
-
-        if plan["agent"] == "analyst":
-            raw = call_analyst(text)
-        elif plan["agent"] == "scout":
-            raw = call_scout(text)
-        else:
-            raw = call_orchestrator(text)
-
-        parsed = _json_or_empty(raw)
-
-        if isinstance(parsed, dict) and "error" in parsed:
-            return JSONResponse(
-                status_code=500,
-                content={"intent": intent, "company_id": cid, "error": parsed["error"]}
-            )
-
-        # Ensure we always return something the UI can render
-        if not isinstance(parsed, dict) or "insights" not in parsed:
-            parsed = _safe_envelope(cid, inputs)
-
-        # Always attach assumptions
-        parsed.setdefault("assumptions", {"company_id": cid, "inputs": inputs})
-
-        return {"intent": intent, "company_id": cid, "result": parsed}
-
-    except Exception as e:
-        return JSONResponse(
-            status_code=500,
-            content={"intent": intent, "company_id": cid, "error": f"{type(e).__name__}: {str(e)}"}
-        )
+    visuals = [
+        {
+            "type": "bar",
+            "title": "Potential Value by Category",
+            "labels": ["bid", "grant", "event", "partner", "weather"],
+            "values": [180000, 6500]()
