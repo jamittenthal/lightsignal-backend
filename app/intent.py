@@ -8,7 +8,7 @@ import json
 router = APIRouter()
 
 class IntentPayload(BaseModel):
-    intent: str               # e.g., "opportunities", "payroll_hiring", "demand_forecasting"
+    intent: str                 # e.g., "opportunities", "payroll_hiring"
     company_id: str = "demo"
     input: Dict[str, Any] = {}
 
@@ -31,7 +31,7 @@ def route_intent(payload: IntentPayload):
     cid = payload.company_id
     inputs = payload.input or {}
 
-    # Choose agent family by intent
+    # Route by intent family
     if intent in (
         "financial_overview", "debt_management_advisor", "payroll_hiring",
         "tax_optimization", "business_health", "asset_management",
@@ -53,7 +53,7 @@ def route_intent(payload: IntentPayload):
 
     parsed = _json_or_empty(raw)
 
-    # Enforce a stable envelope so the UI never breaks
+    # Enforce a safe envelope for the UI
     if not isinstance(parsed, dict) or "insights" not in parsed:
         parsed = {
             "scenario_type": "general_question",
@@ -61,7 +61,7 @@ def route_intent(payload: IntentPayload):
             "scenario": {"kpis": {}},
             "delta": {"kpis": {}},
             "verdict": {"affordable": True, "summary": "OK"},
-            "insights": ["Result returned.", "Adjust agent instructions to refine shape."],
+            "insights": ["Result returned.", "Tighten agent instructions to refine shape."],
             "benchmarks": [],
             "visuals": [],
             "assumptions": {"company_id": cid, "inputs": inputs}
