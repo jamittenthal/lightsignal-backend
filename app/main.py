@@ -20,7 +20,7 @@ RESEARCH_ID     = os.getenv("RESEARCH_ID", "").strip()
 FINANCE_ID      = os.getenv("FINANCE_ID", "").strip()
 
 # -------- FastAPI app --------
-app = FastAPI(title="LightSignal Backend", version="1.0.0")
+app = FastAPI(title="LightSignal Backend", version="1.0.1")
 
 # Allow your Vercel domain & localhost
 allowed_origins = [
@@ -66,11 +66,40 @@ def _latest_text(thread_id: str) -> str:
             return first.text.value
     return ""
 
+def _try_extract_json(text: str) -> Optional[str]:
+    """
+    Be forgiving: strip code fences, then pick the longest {...} block.
+    """
+    if not text:
+        return None
+    # strip ```json … ```
+    if "```" in text:
+        text = text.replace("```json", "```").replace("```JSON", "```")
+        parts = text.split("```")
+        # prefer inside the first fenced block
+        for p in parts:
+            if "{" in p and "}" in p:
+                s = p[p.find("{") : p.rfind("}") + 1]
+                if s:
+                    return s
+    # fallback: find outermost braces
+    if "{" in text and "}" in text:
+        s = text[text.find("{") : text.rfind("}") + 1]
+        return s
+    return None
+
 def _parse_json_or_none(text: str):
     try:
         return json.loads(text)
     except Exception:
-        return None
+        pass
+    blob = _try_extract_json(text or "")
+    if blob:
+        try:
+            return json.loads(blob)
+        except Exception:
+            return None
+    return None
 
 # -------- Research triggers --------
 LOCATION_KEYWORDS = [
@@ -114,14 +143,13 @@ def _guess_scope(text: str) -> Dict[str, Any]:
             break
     return {
         "company_id": "demo",
-        "industry": "HVAC",          # default assumption; your Finance Analyst can override from profile
+        "industry": "HVAC",
         "location": {"city": city} if city else None,
         "timeframe": "last 12 months",
     }
 
 # -------- Assistant runners --------
 def _run_assistant(assistant_id: str, user_content: str) -> str:
-    """Run a single assistant with a user message; return its text output."""
     thread = client.beta.threads.create(messages=[{"role": "user", "content": user_content}])
     run = client.beta.threads.runs.create(thread_id=thread.id, assistant_id=assistant_id)
     _wait_for_run(thread.id, run.id)
@@ -157,7 +185,6 @@ def health():
 
 @app.get("/ai/openapi.yaml")
 def openapi_yaml():
-    # Serve ./ai/openapi.yaml if present
     here = os.path.dirname(os.path.abspath(__file__))
     yaml_path = os.path.join(here, "ai", "openapi.yaml")
     if os.path.exists(yaml_path):
@@ -170,26 +197,19 @@ def orchestrator(req: PromptRequest):
     try:
         if not ORCHESTRATOR_ID:
             return JSONResponse({"error": "ORCHESTRATOR_ID not set"}, status_code=500)
-        # Tag as scenario by default
-        user_content = f"scenario_chat: {req.prompt} (company_id=demo)"
-        # Optional pre-injections
-        msgs: List[Dict[str, str]] = [
-            {"role": "user", "content": user_content}
-        ]
 
-        # Inject RESEARCH if needed
+        user_content = f"scenario_chat: {req.prompt} (company_id=demo)"
+        msgs: List[Dict[str, str]] = [{"role": "user", "content": user_content}]
+
         if _needs_research(req.prompt):
             digest = _run_research_assistant(req.prompt)
             if digest:
                 msgs.insert(0, {"role": "assistant", "content": "RESEARCH_DIGEST_JSON:\n" + json.dumps(digest)})
-
-        # Inject FINANCE if needed
         if _needs_finance(req.prompt):
             fin = _run_finance_assistant(req.prompt)
             if fin:
                 msgs.insert(0, {"role": "assistant", "content": "FINANCIAL_DIGEST_JSON:\n" + json.dumps(fin)})
 
-        # Run Orchestrator
         thread = client.beta.threads.create(messages=msgs)
         run = client.beta.threads.runs.create(thread_id=thread.id, assistant_id=ORCHESTRATOR_ID)
         _wait_for_run(thread.id, run.id)
@@ -198,7 +218,6 @@ def orchestrator(req: PromptRequest):
 
         return JSONResponse({"assistant_id": ORCHESTRATOR_ID, "result": text if not parsed else parsed})
     except Exception as e:
-        # surface OpenAI errors cleanly
         return JSONResponse({"error": f"{e}"}, status_code=500)
 
 @app.post("/api/orchestrator_chat")
@@ -216,11 +235,9 @@ def orchestrator_chat(req: ChatRequest):
 
         if msgs and msgs[-1]["role"] == "user":
             user_text = msgs[-1]["content"]
-            # Tag as scenario + default company if missing
             if "scenario_chat:" not in user_text:
                 msgs[-1]["content"] = f"scenario_chat: {user_text} (company_id=demo)"
 
-            # Research injection for location/market/industry questions
             if _needs_research(user_text):
                 digest = _run_research_assistant(user_text)
                 if digest:
@@ -229,7 +246,6 @@ def orchestrator_chat(req: ChatRequest):
                         {"role": "assistant", "content": "RESEARCH_DIGEST_JSON:\n" + json.dumps(digest)},
                     )
 
-            # Finance injection for affordability/financial questions
             if _needs_finance(user_text):
                 fin = _run_finance_assistant(user_text)
                 if fin:
@@ -238,7 +254,6 @@ def orchestrator_chat(req: ChatRequest):
                         {"role": "assistant", "content": "FINANCIAL_DIGEST_JSON:\n" + json.dumps(fin)},
                     )
 
-        # Run Orchestrator
         thread = client.beta.threads.create(messages=msgs)
         run = client.beta.threads.runs.create(thread_id=thread.id, assistant_id=ORCHESTRATOR_ID)
         _wait_for_run(thread.id, run.id)
