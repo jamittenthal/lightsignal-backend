@@ -1,5 +1,5 @@
 # /backend/main.py
-import os, json, glob
+import os, json
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,7 +9,7 @@ BACKEND_DIR = Path(__file__).resolve().parent
 REPO_ROOT   = BACKEND_DIR.parent
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # may be None
-# Accept either env var name for the assistant ID you said you use
+# Accept either env var name for your assistant ID
 ASSISTANT_ID = os.getenv("ASSISTANT_ID_ORCH") or os.getenv("ASST_ORCHESTRATOR_ID")
 
 AI_TABS_DIR = REPO_ROOT / "ai" / "tabs"         # expects /ai/tabs/*.yaml at repo root
@@ -76,7 +76,7 @@ def call_orchestrator(tab_spec: dict, context: dict) -> dict:
         messages=[{"role":"user","content":json.dumps({"tab_spec": tab_spec, "context": context})}]
     )
     run = client.beta.threads.runs.create(thread_id=thread.id, assistant_id=ASSISTANT_ID)
-    run = client.beta.threads.runs.retrieve(thread_id=run.id, thread_id=thread.id)
+    run = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
     msgs = client.beta.threads.messages.list(thread_id=thread.id)
     content = msgs.data[0].content[0].text.value
     return json.loads(content)
@@ -86,9 +86,14 @@ def call_orchestrator(tab_spec: dict, context: dict) -> dict:
 def health():
     return {"ok": True}
 
-@app.get("/intents")
-def intents():
-    return {"intents": list_intents()}
+@app.get("/version")
+def version():
+    # Render exposes commit SHA as env var RENDER_GIT_COMMIT
+    return {
+        "commit": os.getenv("RENDER_GIT_COMMIT", "unknown"),
+        "has_openai_key": bool(OPENAI_API_KEY),
+        "has_assistant_id": bool(ASSISTANT_ID)
+    }
 
 @app.get("/debug")
 def debug():
@@ -98,15 +103,17 @@ def debug():
         "data_dir": str(DATA_DIR),
         "exists_ai_tabs": AI_TABS_DIR.exists(),
         "exists_data_dir": DATA_DIR.exists(),
-        "intents_now": list_intents(),
         "yaml_files_found": list_files(),
-        "has_openai_key": bool(OPENAI_API_KEY),
-        "has_assistant_id": bool(ASSISTANT_ID),
+        "intents_now": list_intents(),
         "assistant_id_env_used": (
             "ASSISTANT_ID_ORCH" if os.getenv("ASSISTANT_ID_ORCH")
             else ("ASST_ORCHESTRATOR_ID" if os.getenv("ASST_ORCHESTRATOR_ID") else None)
         ),
     }
+
+@app.get("/intents")
+def intents():
+    return {"intents": list_intents()}
 
 @app.post("/api/intent")
 def api_intent(payload: dict):
