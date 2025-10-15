@@ -1,47 +1,31 @@
-# /backend/ai_registry.py
-import glob, time, yaml
-from pathlib import Path
-from typing import Dict, Any, List, Optional
+render@srv-d3knhc1r0fns73brljl0-f97549d9f-68zvw:~/project/src$ # sanity
+curl -s https://lightsignal-backend.onrender.com/health
 
-# repo root = one level up from /backend
-REPO_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_TABS = REPO_ROOT / "ai" / "tabs"
+# debug info (shows detected intents and envs)
+curl -s https://lightsignal-backend.onrender.com/debug | jq .
 
-AI_TABS_DIR = Path(DEFAULT_TABS)  # expects /ai/tabs/*.yaml at repo root
+# list intents
+curl -s https://lightsignal-backend.onrender.com/intents | jq .
 
-_cache: Dict[str, Any] = {"by_intent": {}, "last_scan": 0.0, "files": []}
-_SCAN_INTERVAL = 5.0  # seconds
+# business profile
+curl -s -X POST https://lightsignal-backend.onrender.com/api/intent \
+  -H "Content-Type: application/json" \
+  -d '{"intent":"business_profile","company_id":"demo","input":{}}' | jq .
 
-def _scan_files() -> None:
-    AI_TABS_DIR.mkdir(parents=True, exist_ok=True)
-    files = sorted(glob.glob(str(AI_TABS_DIR / "*.yaml")))
-    _cache["files"] = files
-
-def _load_yaml(path: str) -> Dict[str, Any]:
-    with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f) or {}
-
-def _refresh_cache_if_needed() -> None:
-    now = time.time()
-    if now - _cache["last_scan"] < _SCAN_INTERVAL:
-        return
-    _cache["last_scan"] = now
-    _scan_files()
-    by_intent: Dict[str, Dict[str, Any]] = {}
-    for path in _cache["files"]:
-        try:
-            spec = _load_yaml(path)
-            intent = spec.get("intent")
-            if isinstance(intent, str) and intent.strip():
-                by_intent[intent.strip()] = spec
-        except Exception:
-            pass
-    _cache["by_intent"] = by_intent
-
-def list_intents() -> List[str]:
-    _refresh_cache_if_needed()
-    return sorted(_cache["by_intent"].keys())
-
-def get_tab_spec(intent: str) -> Optional[Dict[str, Any]]:
-    _refresh_cache_if_needed()
-    return _cache["by_intent"].get(intent)
+# debt management
+curl -s -X POST https://lightsignal-backend.onrender.com/api/intent \
+  -H "Content-Type: application/json" \
+  -d '{"intent":"debt_management","company_id":"demo","input":{"target_paydown_months":12}}' | jq .
+{"ok":true}{
+  "detail": "Not Found"
+}
+{
+  "detail": "Not Found"
+}
+{
+  "detail": "Unknown intent: business_profile"
+}
+{
+  "detail": "Unknown intent: debt_management"
+}
+render@srv-d3knhc1r0fns73brljl0-f97549d9f-68zvw:~/project/src$ 
