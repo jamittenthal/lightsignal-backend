@@ -7,8 +7,7 @@ from typing import Dict, Any, List, Optional
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_TABS = REPO_ROOT / "ai" / "tabs"
 
-# You can override with env var AI_TABS_DIR if you want, but default is /ai/tabs at repo root
-AI_TABS_DIR = Path(DEFAULT_TABS)
+AI_TABS_DIR = Path(DEFAULT_TABS)  # expects /ai/tabs/*.yaml at repo root
 
 _cache: Dict[str, Any] = {"by_intent": {}, "last_scan": 0.0, "files": []}
 _SCAN_INTERVAL = 5.0  # seconds
@@ -36,7 +35,6 @@ def _refresh_cache_if_needed() -> None:
             if isinstance(intent, str) and intent.strip():
                 by_intent[intent.strip()] = spec
         except Exception:
-            # ignore malformed files
             pass
     _cache["by_intent"] = by_intent
 
