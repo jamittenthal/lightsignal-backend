@@ -1,33 +1,39 @@
 name: Auto PR Agent
-on:
-  issues:
-    types: [labeled]
+
 permissions:
   contents: write
   pull-requests: write
-  issues: read
+  issues: write
+
+on:
+  workflow_dispatch: {}
+  issues:
+    types: [opened, edited, labeled]
+
 jobs:
-  build_pr:
-    if: contains(github.event.label.name, 'build')
+  open-pr:
+    if: contains(github.event.issue.labels.*.name, 'build')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-      - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
-      - name: Install deps
-        run: pip install openai
-      - name: Ensure gh is authenticated
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh auth status
-      - name: Run Auto-PR
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_MODEL: gpt-5.1
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          ISSUE_TITLE: ${{ github.event.issue.title }}
-          ISSUE_BODY: ${{ github.event.issue.body }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-        run: python ops/auto_pr.py
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Generate PR from issue (stub)
+        run: |
+          echo "Creating a PR from issue #${{ github.event.issue.number }}"
+          echo "This is a placeholder step — replace with your generator when ready." > CHANGELOG_AUTOPR.txt
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "feat: auto PR from issue #${{ github.event.issue.number }}"
+          branch: auto/issue-${{ github.event.issue.number }}
+          title: "Auto PR: ${{ github.event.issue.title }}"
+          body: |
+            Auto-generated from issue #${{ github.event.issue.number }}.
+          labels: |
+            build
+          add-paths: |
+            CHANGELOG_AUTOPR.txt
