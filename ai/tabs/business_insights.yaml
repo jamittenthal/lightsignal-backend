@@ -1,0 +1,22 @@
+intent: business_insights
+summary: "Narrative insights, anomalies, opportunities, and risks."
+inputs: {}
+output_schema:
+  insights:
+    - title: string
+      category: string  # revenue|cost|cash|risk|ops
+      detail: string
+      estimated_impact_usd: number
+      confidence: number
+  next_actions: [string]
+  notes: string
+rules:
+  - "STRICT JSON. Prioritize high impact items."
+provenance:
+  baseline_source: "quickbooks|peers|manual"
+examples:
+  - input: {}
+    output:
+      insights: [{title:"COGS creep", category:"cost", detail:"Vendor A prices up 6% QoQ", estimated_impact_usd:4800, confidence:0.7}]
+      next_actions: ["Negotiate vendor rates"]
+      notes: "Impact = last 3 months annualized."
