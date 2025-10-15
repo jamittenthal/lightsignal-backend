@@ -1,0 +1,44 @@
+intent: business_profile
+summary: "Single source of truth for company profile (industry, location, priorities)."
+inputs: {}
+output_schema:
+  profile:
+    company_id: string
+    name: string
+    naics: string
+    industry: string
+    locations: [string]
+    timezone: string
+    customer_segments: [string]
+    priorities: [string]
+    seasonality_notes: string
+    pricing_model: string
+    risk_flags: [string]
+    goals_next_12m:
+      - goal: string
+        kpi: string
+  next_actions: [string]
+  notes: string
+rules:
+  - "STRICT JSON. Reflect exactly what's in data/companies/<company_id>/profile.json."
+  - "If fields are missing, return nulls/empties and say so in notes."
+provenance:
+  baseline_source: "profile_json|manual"
+examples:
+  - input: {}
+    output:
+      profile:
+        company_id: "demo"
+        name: "Demo HVAC Co"
+        naics: "238220"
+        industry: "HVAC and Plumbing"
+        locations: ["Austin, TX"]
+        timezone: "America/Chicago"
+        customer_segments: ["Residential", "Light Commercial"]
+        priorities: ["Improve gross margin", "Smooth seasonal cash flow", "Grow maintenance plans"]
+        seasonality_notes: "Peak during summer; shoulder season promos help."
+        pricing_model: "Flat-rate + membership"
+        risk_flags: ["Tech turnover", "Vendor price volatility"]
+        goals_next_12m: [{"goal":"Add 300 maintenance-plan members","kpi":"MRR_memberships"}]
+      next_actions: ["Review and update profile fields if outdated"]
+      notes: "Loaded from profile.json"
