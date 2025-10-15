@@ -24,21 +24,3 @@ rules:
   - "If fields are missing, return nulls/empties and say so in notes."
 provenance:
   baseline_source: "profile_json|manual"
-examples:
-  - input: {}
-    output:
-      profile:
-        company_id: "demo"
-        name: "Demo HVAC Co"
-        naics: "238220"
-        industry: "HVAC and Plumbing"
-        locations: ["Austin, TX"]
-        timezone: "America/Chicago"
-        customer_segments: ["Residential", "Light Commercial"]
-        priorities: ["Improve gross margin", "Smooth seasonal cash flow", "Grow maintenance plans"]
-        seasonality_notes: "Peak during summer; shoulder season promos help."
-        pricing_model: "Flat-rate + membership"
-        risk_flags: ["Tech turnover", "Vendor price volatility"]
-        goals_next_12m: [{"goal":"Add 300 maintenance-plan members","kpi":"MRR_memberships"}]
-      next_actions: ["Review and update profile fields if outdated"]
-      notes: "Loaded from profile.json"
