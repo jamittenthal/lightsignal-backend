@@ -1,0 +1,32 @@
+intent: dashboard
+summary: "Home overview with key KPIs, alerts, and quick links."
+inputs: {}
+output_schema:
+  kpis:
+    cash_balance: number
+    revenue_mtd: number
+    expenses_mtd: number
+    net_income_mtd: number
+    runway_months: number
+  alerts:
+    - type: string
+      title: string
+      severity: string  # info|warning|critical
+      detail: string
+  quick_links:
+    - label: string
+      intent: string
+      params: object
+  notes: string
+rules:
+  - "Return STRICT JSON matching output_schema."
+  - "If data is missing, return nulls and explain in notes."
+provenance:
+  baseline_source: "quickbooks|playground|manual|peers"
+examples:
+  - input: {}
+    output:
+      kpis: { cash_balance: 52000, revenue_mtd: 31666.67, expenses_mtd: 34833.34, net_income_mtd: -3166.67, runway_months: 5.8 }
+      alerts: [{type:"cash", title:"Negative MTD income", severity:"warning", detail:"Expenses exceed revenue this month."}]
+      quick_links: [{label:"Open Debt Advisor", intent:"debt_management", params:{}}]
+      notes: "Values are MTD using QB sandbox."
