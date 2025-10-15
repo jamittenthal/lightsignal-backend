@@ -25,6 +25,6 @@ examples:
     output:
       kpis: {total_debt: 120000, avg_interest_rate: 0.092, monthly_payment: 4100}
       strategies:
-        - {name: "Refi LOC", est_payoff_months: 11, est_interest_saved: 4300, pros: ["lower APR"], cons: ["closing costs"]}
+        - {name:"Refi LOC", est_payoff_months:11, est_interest_saved:4300, pros:["lower APR"], cons:["closing costs"]}
       next_actions: ["Get 2 refi quotes", "Upload payoff letters"]
       notes: "APR estimate = prime+2%."
