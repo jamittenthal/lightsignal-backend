@@ -1,0 +1,27 @@
+intent: user_management
+summary: "Team members, roles, invitations, and permissions."
+inputs: {}
+output_schema:
+  users:
+    - id: string
+      name: string
+      email: string
+      role: string     # owner|admin|analyst|viewer
+      status: string   # active|invited|disabled
+  pending_invites:
+    - email: string
+      role: string
+      sent_at: string
+  next_actions: [string]
+  notes: string
+rules:
+  - "STRICT JSON. Do not send emails; only propose actions."
+provenance:
+  baseline_source: "app|manual"
+examples:
+  - input: {}
+    output:
+      users:[{id:"u_1", name:"Owner", email:"owner@example.com", role:"owner", status:"active"}]
+      pending_invites:[]
+      next_actions:["Invite bookkeeper as analyst"]
+      notes:"Roles mapped to tab access."
