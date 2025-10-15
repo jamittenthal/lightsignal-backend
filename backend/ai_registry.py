@@ -20,7 +20,6 @@ def _scan_files() -> None:
     _cache["files"] = files
 
 def _load_yaml(path: str) -> Dict[str, Any]:
-    # Load ONCE and ensure dict
     with open(path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
     return data if isinstance(data, dict) else {}
@@ -30,7 +29,6 @@ def _refresh_cache_if_needed() -> None:
     if now - _cache["last_scan"] < _SCAN_INTERVAL:
         return
     _cache["last_scan"] = now
-
     _scan_files()
     by_intent: Dict[str, Dict[str, Any]] = {}
     errors: List[Tuple[str, str]] = []
