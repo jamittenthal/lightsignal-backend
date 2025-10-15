@@ -1,0 +1,33 @@
+intent: scenario_planning_lab
+summary: "What-if scenarios, levers, results, and AI advice."
+inputs:
+  scenario_name: {type: string, required: false}
+  levers: {type: array, required: false}     # [{lever:"price", delta_pct:5}, ...]
+output_schema:
+  kpis:
+    npv: number
+    payback_months: number
+    irr_pct: number
+  results:
+    baseline: object
+    proposed: object
+    deltas: object
+  lever_impacts:
+    - lever: string
+      impact_revenue_pct: number
+      impact_profit_pct: number
+  next_actions: [string]
+  notes: string
+rules:
+  - "STRICT JSON."
+  - "Show assumptions and math notes."
+provenance:
+  baseline_source: "quickbooks|playground|manual|peers"
+examples:
+  - input: {scenario_name:"Price +5%", levers:[{lever:"price", delta_pct:5}]}
+    output:
+      kpis:{npv:42000, payback_months:6, irr_pct:22.5}
+      results:{baseline:{profit:10000}, proposed:{profit:12500}, deltas:{profit:2500}}
+      lever_impacts:[{lever:"price", impact_revenue_pct:5, impact_profit_pct:25}]
+      next_actions:["Test new price on top SKUs"]
+      notes:"Elasticity assumed -0.3."
