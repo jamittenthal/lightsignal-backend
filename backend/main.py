@@ -3,23 +3,22 @@ import os, json
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from openai import OpenAI
 
 # ---------- Paths / Config ----------
 BACKEND_DIR = Path(__file__).resolve().parent
 REPO_ROOT   = BACKEND_DIR.parent
 
-OPENAI_API_KEY     = os.environ["OPENAI_API_KEY"]
-ASSISTANT_ID_ORCH  = os.environ["ASSISTANT_ID_ORCH"]
+OPENAI_API_KEY     = os.getenv("OPENAI_API_KEY")      # may be None
+ASSISTANT_ID_ORCH  = os.getenv("ASSISTANT_ID_ORCH")   # may be None
 
 AI_TABS_DIR = REPO_ROOT / "ai" / "tabs"               # expects /ai/tabs/*.yaml at repo root
 DATA_DIR    = REPO_ROOT / "data" / "companies"        # expects /data/companies/<id>/profile.json
 
 # ---------- App ----------
 app = FastAPI(title="LightSignal Backend")
-client = OpenAI(api_key=OPENAI_API_KEY)
 
-FRONTEND_ORIGIN = os.environ.get("FRONTEND_ORIGIN", "*")
+# CORS (allow your Vercel URL; "*" is fine for quick testing)
+FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "*")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[FRONTEND_ORIGIN] if FRONTEND_ORIGIN != "*" else ["*"],
@@ -27,6 +26,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ---------- OpenAI client (lazy / optional) ----------
+_openai_client = None
+def get_openai_client():
+    global _openai_client
+    if _openai_client is None and OPENAI_API_KEY:
+        from openai import OpenAI
+        _openai_client = OpenAI(api_key=OPENAI_API_KEY)
+    return _openai_client
 
 # ---------- Intent registry ----------
 from .ai_registry import get_tab_spec, list_intents  # from /backend/ai_registry.py
@@ -54,17 +62,27 @@ def get_financials(company_id: str) -> dict:
     }
 
 def call_orchestrator(tab_spec: dict, context: dict) -> dict:
-    # Threads API (simple). If you use Responses API, swap that in here.
+    # If OpenAI is not configured yet, return a friendly stub so UI/dev can proceed
+    if not OPENAI_API_KEY or not ASSISTANT_ID_ORCH:
+        return {
+            "stub": True,
+            "message": "OpenAI not configured (missing OPENAI_API_KEY or ASSISTANT_ID_ORCH).",
+            "echo": {"tab_spec_present": bool(tab_spec), "context_keys": list(context.keys())}
+        }
+
+    client = get_openai_client()
+    # Threads API (simple). Swap to Responses API if you prefer.
     thread = client.beta.threads.create(
         messages=[{"role":"user","content":json.dumps({"tab_spec": tab_spec, "context": context})}]
     )
     run = client.beta.threads.runs.create(thread_id=thread.id, assistant_id=ASSISTANT_ID_ORCH)
+    # In your env this returns quickly; otherwise you would poll until completed.
     run = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
     msgs = client.beta.threads.messages.list(thread_id=thread.id)
     content = msgs.data[0].content[0].text.value
     return json.loads(content)
 
-# ---------- Routes (define directly on app to avoid router mixups) ----------
+# ---------- Routes ----------
 @app.get("/health")
 def health():
     return {"ok": True}
@@ -99,14 +117,16 @@ def api_intent(payload: dict):
     }
     return call_orchestrator(tab_spec, context)
 
-# ---------- DEBUG (helps verify Render sees your files) ----------
+# ---------- DEBUG ----------
 @app.get("/debug")
 def debug():
     return {
-        "cwd": str(REPO_ROOT),
+        "repo_root": str(REPO_ROOT),
         "ai_tabs_dir": str(AI_TABS_DIR),
         "data_dir": str(DATA_DIR),
-        "intents_now": list_intents(),
         "exists_ai_tabs": AI_TABS_DIR.exists(),
-        "exists_data_dir": DATA_DIR.exists()
+        "exists_data_dir": DATA_DIR.exists(),
+        "intents_now": list_intents(),
+        "has_openai_key": bool(OPENAI_API_KEY),
+        "has_assistant_id": bool(ASSISTANT_ID_ORCH),
     }
