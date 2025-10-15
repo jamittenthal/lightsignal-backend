@@ -1,14 +1,17 @@
-# /ai_registry.py
-import os, glob, yaml, time
+# /backend/ai_registry.py
+import glob, time, yaml
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
-BASE_DIR = Path(__file__).resolve().parent
-DEFAULT_TABS = BASE_DIR / "ai" / "tabs"
-AI_TABS_DIR = Path(os.environ.get("AI_TABS_DIR", str(DEFAULT_TABS)))
+# repo root = one level up from /backend
+REPO_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_TABS = REPO_ROOT / "ai" / "tabs"
+
+# You can override with env var AI_TABS_DIR if you want, but default is /ai/tabs at repo root
+AI_TABS_DIR = Path(DEFAULT_TABS)
 
 _cache: Dict[str, Any] = {"by_intent": {}, "last_scan": 0.0, "files": []}
-_SCAN_INTERVAL = 5.0
+_SCAN_INTERVAL = 5.0  # seconds
 
 def _scan_files() -> None:
     AI_TABS_DIR.mkdir(parents=True, exist_ok=True)
@@ -33,6 +36,7 @@ def _refresh_cache_if_needed() -> None:
             if isinstance(intent, str) and intent.strip():
                 by_intent[intent.strip()] = spec
         except Exception:
+            # ignore malformed files
             pass
     _cache["by_intent"] = by_intent
 
