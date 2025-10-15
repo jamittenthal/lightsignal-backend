@@ -1,28 +1,24 @@
 # /backend/main.py
 import os, json
 from pathlib import Path
-from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from openai import OpenAI
 
-# Paths
+# ---------- Paths / Config ----------
 BACKEND_DIR = Path(__file__).resolve().parent
 REPO_ROOT   = BACKEND_DIR.parent
 
-# Env / config
-OPENAI_API_KEY   = os.environ["OPENAI_API_KEY"]
-ASSISTANT_ID_ORCH = os.environ["ASSISTANT_ID_ORCH"]
+OPENAI_API_KEY     = os.environ["OPENAI_API_KEY"]
+ASSISTANT_ID_ORCH  = os.environ["ASSISTANT_ID_ORCH"]
 
-# Defaults point to folders at repo root
-AI_TABS_DIR = REPO_ROOT / "ai" / "tabs"
-DATA_DIR    = REPO_ROOT / "data" / "companies"
+AI_TABS_DIR = REPO_ROOT / "ai" / "tabs"               # expects /ai/tabs/*.yaml at repo root
+DATA_DIR    = REPO_ROOT / "data" / "companies"        # expects /data/companies/<id>/profile.json
 
-# App
+# ---------- App ----------
 app = FastAPI(title="LightSignal Backend")
-router = APIRouter()
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-# CORS (allow your Vercel URL; "*" is fine for quick testing)
 FRONTEND_ORIGIN = os.environ.get("FRONTEND_ORIGIN", "*")
 app.add_middleware(
     CORSMiddleware,
@@ -32,9 +28,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Intent registry (sibling module)
-from .ai_registry import get_tab_spec, list_intents  # relative import from /backend
+# ---------- Intent registry ----------
+from .ai_registry import get_tab_spec, list_intents  # from /backend/ai_registry.py
 
+# ---------- Helpers ----------
 def load_json(path: Path):
     if not path.exists():
         return {}
@@ -47,7 +44,7 @@ def get_profile(company_id: str) -> dict:
     return load_json(DATA_DIR / company_id / "profile.json")
 
 def get_financials(company_id: str) -> dict:
-    # TODO: replace with your real QuickBooks fetch
+    # TODO: replace with real QuickBooks fetch
     return {
         "financial_overview": {
             "revenue_mtd": 31666.67,
@@ -57,7 +54,7 @@ def get_financials(company_id: str) -> dict:
     }
 
 def call_orchestrator(tab_spec: dict, context: dict) -> dict:
-    # Threads API (simple). Swap to Responses API if you prefer.
+    # Threads API (simple). If you use Responses API, swap that in here.
     thread = client.beta.threads.create(
         messages=[{"role":"user","content":json.dumps({"tab_spec": tab_spec, "context": context})}]
     )
@@ -67,15 +64,16 @@ def call_orchestrator(tab_spec: dict, context: dict) -> dict:
     content = msgs.data[0].content[0].text.value
     return json.loads(content)
 
+# ---------- Routes (define directly on app to avoid router mixups) ----------
 @app.get("/health")
 def health():
     return {"ok": True}
 
-@router.get("/intents")
+@app.get("/intents")
 def intents():
     return {"intents": list_intents()}
 
-@router.post("/api/intent")
+@app.post("/api/intent")
 def api_intent(payload: dict):
     intent      = payload.get("intent")
     company_id  = payload.get("company_id", "demo")
@@ -101,4 +99,14 @@ def api_intent(payload: dict):
     }
     return call_orchestrator(tab_spec, context)
 
-app.include_router(router)
+# ---------- DEBUG (helps verify Render sees your files) ----------
+@app.get("/debug")
+def debug():
+    return {
+        "cwd": str(REPO_ROOT),
+        "ai_tabs_dir": str(AI_TABS_DIR),
+        "data_dir": str(DATA_DIR),
+        "intents_now": list_intents(),
+        "exists_ai_tabs": AI_TABS_DIR.exists(),
+        "exists_data_dir": DATA_DIR.exists()
+    }
