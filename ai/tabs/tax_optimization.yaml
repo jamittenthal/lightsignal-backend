@@ -1,0 +1,26 @@
+intent: tax_optimization
+summary: "Tax posture, elections, credits, and estimated savings."
+inputs: {}
+output_schema:
+  kpis:
+    effective_tax_rate_pct: number
+    credits_identified: number
+    est_savings_usd: number
+  opportunities:
+    - name: string
+      description: string
+      est_savings_usd: number
+      requirements: [string]
+  next_actions: [string]
+  notes: string
+rules:
+  - "STRICT JSON. Avoid legal advice—flag 'talk to CPA' when needed."
+provenance:
+  baseline_source: "financials|credits_db|manual"
+examples:
+  - input: {}
+    output:
+      kpis:{effective_tax_rate_pct:18.5, credits_identified:2, est_savings_usd:7500}
+      opportunities:[{name:"179 expensing", description:"Accelerated deduction", est_savings_usd:4200, requirements:["Capex receipts"]}]
+      next_actions:["Upload last-year return"]
+      notes:"General guidance only."
