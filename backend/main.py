@@ -1,5 +1,5 @@
 # /backend/main.py
-import os, json
+import os, json, glob
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,19 +9,15 @@ BACKEND_DIR = Path(__file__).resolve().parent
 REPO_ROOT   = BACKEND_DIR.parent
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # may be None
-# Accept either env var name for the assistant ID
-ASSISTANT_ID = (
-    os.getenv("ASSISTANT_ID_ORCH")
-    or os.getenv("ASST_ORCHESTRATOR_ID")
-)
+# Accept either env var name for the assistant ID you said you use
+ASSISTANT_ID = os.getenv("ASSISTANT_ID_ORCH") or os.getenv("ASST_ORCHESTRATOR_ID")
 
-AI_TABS_DIR = REPO_ROOT / "ai" / "tabs"               # expects /ai/tabs/*.yaml at repo root
-DATA_DIR    = REPO_ROOT / "data" / "companies"        # expects /data/companies/<id>/profile.json
+AI_TABS_DIR = REPO_ROOT / "ai" / "tabs"         # expects /ai/tabs/*.yaml at repo root
+DATA_DIR    = REPO_ROOT / "data" / "companies"  # expects /data/companies/<id>/profile.json
 
 # ---------- App ----------
 app = FastAPI(title="LightSignal Backend")
 
-# CORS (allow your Vercel URL; "*" is fine for testing)
 FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "*")
 app.add_middleware(
     CORSMiddleware,
@@ -41,7 +37,7 @@ def get_openai_client():
     return _openai_client
 
 # ---------- Intent registry ----------
-from .ai_registry import get_tab_spec, list_intents  # from /backend/ai_registry.py
+from .ai_registry import get_tab_spec, list_intents, list_files  # local module
 
 # ---------- Helpers ----------
 def load_json(path: Path):
@@ -80,7 +76,7 @@ def call_orchestrator(tab_spec: dict, context: dict) -> dict:
         messages=[{"role":"user","content":json.dumps({"tab_spec": tab_spec, "context": context})}]
     )
     run = client.beta.threads.runs.create(thread_id=thread.id, assistant_id=ASSISTANT_ID)
-    run = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
+    run = client.beta.threads.runs.retrieve(thread_id=run.id, thread_id=thread.id)
     msgs = client.beta.threads.messages.list(thread_id=thread.id)
     content = msgs.data[0].content[0].text.value
     return json.loads(content)
@@ -93,6 +89,24 @@ def health():
 @app.get("/intents")
 def intents():
     return {"intents": list_intents()}
+
+@app.get("/debug")
+def debug():
+    return {
+        "repo_root": str(REPO_ROOT),
+        "ai_tabs_dir": str(AI_TABS_DIR),
+        "data_dir": str(DATA_DIR),
+        "exists_ai_tabs": AI_TABS_DIR.exists(),
+        "exists_data_dir": DATA_DIR.exists(),
+        "intents_now": list_intents(),
+        "yaml_files_found": list_files(),
+        "has_openai_key": bool(OPENAI_API_KEY),
+        "has_assistant_id": bool(ASSISTANT_ID),
+        "assistant_id_env_used": (
+            "ASSISTANT_ID_ORCH" if os.getenv("ASSISTANT_ID_ORCH")
+            else ("ASST_ORCHESTRATOR_ID" if os.getenv("ASST_ORCHESTRATOR_ID") else None)
+        ),
+    }
 
 @app.post("/api/intent")
 def api_intent(payload: dict):
@@ -119,21 +133,3 @@ def api_intent(payload: dict):
         "spec_dir": str(AI_TABS_DIR)
     }
     return call_orchestrator(tab_spec, context)
-
-# ---------- DEBUG ----------
-@app.get("/debug")
-def debug():
-    return {
-        "repo_root": str(REPO_ROOT),
-        "ai_tabs_dir": str(AI_TABS_DIR),
-        "data_dir": str(DATA_DIR),
-        "exists_ai_tabs": AI_TABS_DIR.exists(),
-        "exists_data_dir": DATA_DIR.exists(),
-        "intents_now": list_intents(),
-        "has_openai_key": bool(OPENAI_API_KEY),
-        "has_assistant_id": bool(ASSISTANT_ID),
-        "assistant_id_env_used": (
-            "ASSISTANT_ID_ORCH" if os.getenv("ASSISTANT_ID_ORCH")
-            else ("ASST_ORCHESTRATOR_ID" if os.getenv("ASST_ORCHESTRATOR_ID") else None)
-        ),
-    }
