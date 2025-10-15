@@ -37,7 +37,7 @@ def get_openai_client():
     return _openai_client
 
 # ---------- Intent registry ----------
-from .ai_registry import get_tab_spec, list_intents, list_files  # local module
+from .ai_registry import get_tab_spec, list_intents, list_files, debug_info  # local module
 
 # ---------- Helpers ----------
 def load_json(path: Path):
@@ -88,7 +88,6 @@ def health():
 
 @app.get("/version")
 def version():
-    # Render exposes commit SHA as env var RENDER_GIT_COMMIT
     return {
         "commit": os.getenv("RENDER_GIT_COMMIT", "unknown"),
         "has_openai_key": bool(OPENAI_API_KEY),
@@ -114,6 +113,10 @@ def debug():
 @app.get("/intents")
 def intents():
     return {"intents": list_intents()}
+
+@app.get("/intents/debug")
+def intents_debug():
+    return debug_info()
 
 @app.post("/api/intent")
 def api_intent(payload: dict):
