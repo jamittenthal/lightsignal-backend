@@ -1,0 +1,29 @@
+intent: asset_management
+summary: "Track assets, depreciation, maintenance, and utilization."
+inputs: {}
+output_schema:
+  kpis:
+    asset_count: number
+    avg_utilization_pct: number
+    maintenance_due_count: number
+    book_value_total: number
+  assets:
+    - id: string
+      name: string
+      category: string
+      book_value: number
+      utilization_pct: number
+      maintenance_due: boolean
+  next_actions: [string]
+  notes: string
+rules:
+  - "STRICT JSON. Flag items due for maintenance."
+provenance:
+  baseline_source: "quickbooks|manual"
+examples:
+  - input: {}
+    output:
+      kpis:{asset_count:14, avg_utilization_pct:62, maintenance_due_count:2, book_value_total:185000}
+      assets:[{id:"TRK-01", name:"Service Truck", category:"Vehicle", book_value:35000, utilization_pct:78, maintenance_due:true}]
+      next_actions:["Schedule truck service"]
+      notes:"Book values from fixed asset register."
