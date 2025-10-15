@@ -1,0 +1,17 @@
+{
+  "company_id": "demo",
+  "name": "Demo HVAC Co",
+  "naics": "238220",
+  "industry": "HVAC and Plumbing",
+  "locations": ["Austin, TX"],
+  "timezone": "America/Chicago",
+  "customer_segments": ["Residential", "Light Commercial"],
+  "priorities": ["Improve gross margin", "Smooth seasonal cash flow", "Grow maintenance plans"],
+  "seasonality_notes": "Peak during summer heat waves; shoulder season promos help.",
+  "pricing_model": "Flat-rate + membership",
+  "risk_flags": ["Tech turnover", "Vendor price volatility"],
+  "goals_next_12m": [
+    {"goal": "Add 300 maintenance-plan members", "kpi": "MRR_memberships"},
+    {"goal": "Cut parts shrink by 20%", "kpi": "COGS_shrink"}
+  ]
+}
