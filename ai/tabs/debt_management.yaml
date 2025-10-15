@@ -1,0 +1,30 @@
+intent: debt_management
+summary: "Analyze outstanding debts and recommend payoff/refi strategies with savings."
+inputs:
+  target_paydown_months: {type: integer, required: false}
+output_schema:
+  kpis:
+    total_debt: number
+    avg_interest_rate: number
+    monthly_payment: number
+  strategies:
+    - name: string
+      est_payoff_months: number
+      est_interest_saved: number
+      pros: [string]
+      cons: [string]
+  next_actions: [string]
+  notes: string
+rules:
+  - "Return STRICT JSON matching output_schema. No extra prose."
+  - "Put all assumptions in 'notes'."
+provenance:
+  baseline_source: "quickbooks|playground|manual|peers"
+examples:
+  - input: {target_paydown_months: 12}
+    output:
+      kpis: {total_debt: 120000, avg_interest_rate: 0.092, monthly_payment: 4100}
+      strategies:
+        - {name: "Refi LOC", est_payoff_months: 11, est_interest_saved: 4300, pros: ["lower APR"], cons: ["closing costs"]}
+      next_actions: ["Get 2 refi quotes", "Upload payoff letters"]
+      notes: "APR estimate = prime+2%."
