@@ -1,28 +1,27 @@
 intent: business_health
-summary: "Composite health score across finance, ops, customers, risk, growth."
+summary: Composite health score across finance, ops, customers, risk, growth.
 inputs: {}
 output_schema:
   kpis:
     overall_score: number
   categories:
-    - name: string
-      score: number
-      drivers: [string]
+  - name: string
+    score: number
+    drivers:
+    - string
   alerts:
-    - title: string
-      severity: string
-      detail: string
-  recommendations: [string]
+  - title: string
+    severity: string
+    detail: string
+  recommendations:
+  - string
   notes: string
 rules:
-  - "STRICT JSON. Scores 0–100."
+- STRICT JSON. Scores 0–100.
 provenance:
-  baseline_source: "financials|ops|customers|peers"
+  baseline_source: financials|ops|customers|peers
 examples:
-  - input: {}
-    output:
-      kpis:{overall_score:68}
-      categories:[{name:"Finance", score:62, drivers:["Margin dip MTD"]}]
-      alerts:[{title:"Negative MTD income", severity:"warning", detail:"Monitor burn"}]
-      recommendations:["Cut low-ROI spend by 10%"]
-      notes:"Weights from defaults."
+- input: {}
+  output: kpis:{overall_score:68} categories:[{name:"Finance", score:62, drivers:["Margin
+    dip MTD"]}] alerts:[{title:"Negative MTD income", severity:"warning", detail:"Monitor
+    burn"}] recommendations:["Cut low-ROI spend by 10%"] notes:"Weights from defaults."

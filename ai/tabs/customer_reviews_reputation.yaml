@@ -1,5 +1,5 @@
 intent: customer_reviews_reputation
-summary: "Reviews, ratings trends, response queue, and themes."
+summary: Reviews, ratings trends, response queue, and themes.
 inputs: {}
 output_schema:
   kpis:
@@ -7,25 +7,24 @@ output_schema:
     reviews_last_30d: number
     response_backlog: number
   themes:
-    - topic: string
-      share_pct: number
-      sentiment: string  # positive|neutral|negative
+  - topic: string
+    share_pct: number
+    sentiment: string
   queue:
-    - review_id: string
-      platform: string
-      rating: number
-      recommended_response: string
-  next_actions: [string]
+  - review_id: string
+    platform: string
+    rating: number
+    recommended_response: string
+  next_actions:
+  - string
   notes: string
 rules:
-  - "STRICT JSON. No posting responses—only suggestions."
+- STRICT JSON. No posting responses—only suggestions.
 provenance:
-  baseline_source: "reviews|manual"
+  baseline_source: reviews|manual
 examples:
-  - input: {}
-    output:
-      kpis:{avg_rating:4.2, reviews_last_30d:38, response_backlog:6}
-      themes:[{topic:"Scheduling", share_pct:0.27, sentiment:"negative"}]
-      queue:[{review_id:"GMB-123", platform:"Google", rating:2, recommended_response:"Apologize and offer reschedule credit"}]
-      next_actions:["Prioritize low-rating responses"]
-      notes:"Themes from simple clustering."
+- input: {}
+  output: kpis:{avg_rating:4.2, reviews_last_30d:38, response_backlog:6} themes:[{topic:"Scheduling",
+    share_pct:0.27, sentiment:"negative"}] queue:[{review_id:"GMB-123", platform:"Google",
+    rating:2, recommended_response:"Apologize and offer reschedule credit"}] next_actions:["Prioritize
+    low-rating responses"] notes:"Themes from simple clustering."

@@ -1,7 +1,9 @@
 intent: opportunities
-summary: "Upcoming demand/rebate/events and sales opportunities."
+summary: Upcoming demand/rebate/events and sales opportunities.
 inputs:
-  region: {type: string, required: false}
+  region:
+    type: string
+    required: false
 output_schema:
   kpis:
     active_count: number
@@ -10,19 +12,20 @@ output_schema:
     event_readiness: number
     historical_roi: number
   items:
-    - title: string
-      window: string
-      est_value: number
-      fit_score: number
-      action: string
+  - title: string
+    window: string
+    est_value: number
+    fit_score: number
+    action: string
   notes: string
 rules:
-  - "STRICT JSON. Use region if provided."
+- STRICT JSON. Use region if provided.
 provenance:
-  baseline_source: "market|weather|energy_rebates|manual"
+  baseline_source: market|weather|energy_rebates|manual
 examples:
-  - input: {region:"Austin, TX"}
-    output:
-      kpis:{active_count:5, potential_value:320000, avg_fit_score:0.76, event_readiness:0.68, historical_roi:0.21}
-      items:[{title:"HVAC rebate window", window:"10 days", est_value:55000, fit_score:0.8, action:"Prep applications"}]
-      notes:"Based on local utility programs."
+- input:
+    region:"Austin: null
+    TX": null
+  output: kpis:{active_count:5, potential_value:320000, avg_fit_score:0.76, event_readiness:0.68,
+    historical_roi:0.21} items:[{title:"HVAC rebate window", window:"10 days", est_value:55000,
+    fit_score:0.8, action:"Prep applications"}] notes:"Based on local utility programs."

@@ -1,5 +1,5 @@
 intent: success_planning_exit_readiness
-summary: "Owner readiness, valuation drivers, and exit checklist."
+summary: Owner readiness, valuation drivers, and exit checklist.
 inputs: {}
 output_schema:
   kpis:
@@ -7,23 +7,22 @@ output_schema:
     readiness_score: number
     time_to_ready_months: number
   drivers:
-    - name: string
-      status: string
-      priority: string
+  - name: string
+    status: string
+    priority: string
   checklist:
-    - item: string
-      done: boolean
-  next_actions: [string]
+  - item: string
+    done: boolean
+  next_actions:
+  - string
   notes: string
 rules:
-  - "STRICT JSON. Use conservative valuation proxy if needed."
+- STRICT JSON. Use conservative valuation proxy if needed.
 provenance:
-  baseline_source: "financials|peers|manual"
+  baseline_source: financials|peers|manual
 examples:
-  - input: {}
-    output:
-      kpis:{estimated_valuation:1800000, readiness_score:0.58, time_to_ready_months:12}
-      drivers:[{name:"Customer concentration", status:"High", priority:"High"}]
-      checklist:[{item:"Document SOPs", done:false}]
-      next_actions:["Diversify top clients"]
-      notes:"EBITDA multiple uses peer band."
+- input: {}
+  output: kpis:{estimated_valuation:1800000, readiness_score:0.58, time_to_ready_months:12}
+    drivers:[{name:"Customer concentration", status:"High", priority:"High"}] checklist:[{item:"Document
+    SOPs", done:false}] next_actions:["Diversify top clients"] notes:"EBITDA multiple
+    uses peer band."

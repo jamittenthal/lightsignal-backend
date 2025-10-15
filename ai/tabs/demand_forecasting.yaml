@@ -1,29 +1,30 @@
 intent: demand_forecasting
-summary: "Forecast demand by product/service with uncertainty."
+summary: Forecast demand by product/service with uncertainty.
 inputs:
-  horizon_months: {type: integer, required: false}
+  horizon_months:
+    type: integer
+    required: false
 output_schema:
   kpis:
     forecast_revenue_next_90d: number
     p10_revenue: number
     p90_revenue: number
   forecast_series:
-    - period: string
-      revenue_mean: number
-      revenue_p10: number
-      revenue_p90: number
+  - period: string
+    revenue_mean: number
+    revenue_p10: number
+    revenue_p90: number
   drivers:
-    - name: string
-      weight: number
+  - name: string
+    weight: number
   notes: string
 rules:
-  - "STRICT JSON. Include uncertainty bands."
+- STRICT JSON. Include uncertainty bands.
 provenance:
-  baseline_source: "quickbooks|seasonality|market"
+  baseline_source: quickbooks|seasonality|market
 examples:
-  - input: {horizon_months:3}
-    output:
-      kpis:{forecast_revenue_next_90d:95000, p10_revenue:82000, p90_revenue:112000}
-      forecast_series:[{period:"Nov",revenue_mean:32000,revenue_p10:28000,revenue_p90:36000}]
-      drivers:[{name:"seasonality", weight:0.6}]
-      notes:"AR baseline with simple seasonality."
+- input:
+    horizon_months:3: null
+  output: kpis:{forecast_revenue_next_90d:95000, p10_revenue:82000, p90_revenue:112000}
+    forecast_series:[{period:"Nov",revenue_mean:32000,revenue_p10:28000,revenue_p90:36000}]
+    drivers:[{name:"seasonality", weight:0.6}] notes:"AR baseline with simple seasonality."

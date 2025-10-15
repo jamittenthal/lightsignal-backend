@@ -1,22 +1,27 @@
 intent: debt_management
-summary: "Analyze outstanding debts and recommend payoff/refi strategies with savings."
+summary: Analyze outstanding debts and recommend payoff/refi strategies with savings.
 inputs:
-  target_paydown_months: {type: integer, required: false}
+  target_paydown_months:
+    type: integer
+    required: false
 output_schema:
   kpis:
     total_debt: number
     avg_interest_rate: number
     monthly_payment: number
   strategies:
-    - name: string
-      est_payoff_months: number
-      est_interest_saved: number
-      pros: [string]
-      cons: [string]
-  next_actions: [string]
+  - name: string
+    est_payoff_months: number
+    est_interest_saved: number
+    pros:
+    - string
+    cons:
+    - string
+  next_actions:
+  - string
   notes: string
 rules:
-  - "Return STRICT JSON matching output_schema. No extra prose."
-  - "Put all assumptions in 'notes'."
+- Return STRICT JSON matching output_schema. No extra prose.
+- Put all assumptions in 'notes'.
 provenance:
-  baseline_source: "quickbooks|playground|manual|peers"
+  baseline_source: quickbooks|playground|manual|peers
