@@ -9,7 +9,7 @@ _cache: Dict[str, Any] = {
     "last_scan": 0.0,
     "files": []
 }
-_SCAN_INTERVAL = 5.0  # seconds, tiny so edits show up quickly
+_SCAN_INTERVAL = 5.0  # seconds
 
 def _scan_files() -> None:
     files = sorted(glob.glob(os.path.join(AI_TABS_DIR, "*.yaml")))
@@ -27,17 +27,14 @@ def _refresh_cache_if_needed() -> None:
 
     _scan_files()
     by_intent: Dict[str, Dict[str, Any]] = {}
-
     for path in _cache["files"]:
         try:
             spec = _load_yaml(path)
             intent = spec.get("intent")
             if isinstance(intent, str) and intent.strip():
                 by_intent[intent.strip()] = spec
-        except Exception as e:
-            # keep going, but you may want to log this
+        except Exception:
             pass
-
     _cache["by_intent"] = by_intent
 
 def list_intents() -> List[str]:
