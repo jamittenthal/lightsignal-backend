@@ -1,51 +1,104 @@
-# ai_registry.py
-import os, glob, yaml, time
+# app.py
+import os, json
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from openai import OpenAI
 
+# === Paths / Config ===
 BASE_DIR = Path(__file__).resolve().parent
-DEFAULT_TABS = BASE_DIR / "ai" / "tabs"
-AI_TABS_DIR = Path(os.environ.get("AI_TABS_DIR", str(DEFAULT_TABS)))
+OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
+ASSISTANT_ID_ORCH = os.environ["ASSISTANT_ID_ORCH"]
 
-_cache: Dict[str, Any] = {
-    "by_intent": {},
-    "last_scan": 0.0,
-    "files": []
-}
-_SCAN_INTERVAL = 5.0  # seconds
+# Optional overrides; defaults point INSIDE your repo on Render
+AI_TABS_DIR = Path(os.environ.get("AI_TABS_DIR", str(BASE_DIR / "ai" / "tabs")))
+DATA_DIR    = Path(os.environ.get("DATA_DIR",    str(BASE_DIR / "data" / "companies")))
 
-def _scan_files() -> None:
-    AI_TABS_DIR.mkdir(parents=True, exist_ok=True)
-    files = sorted(glob.glob(str(AI_TABS_DIR / "*.yaml")))
-    _cache["files"] = files
+# === FastAPI app ===
+app = FastAPI(title="LightSignal Backend")
+router = APIRouter()
+client = OpenAI(api_key=OPENAI_API_KEY)
 
-def _load_yaml(path: str) -> Dict[str, Any]:
-    with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f) or {}
+# CORS (allow your Vercel site; "*" is fine for testing)
+FRONTEND_ORIGIN = os.environ.get("FRONTEND_ORIGIN", "*")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[FRONTEND_ORIGIN] if FRONTEND_ORIGIN != "*" else ["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-def _refresh_cache_if_needed() -> None:
-    now = time.time()
-    if now - _cache["last_scan"] < _SCAN_INTERVAL:
-        return
-    _cache["last_scan"] = now
+# === Intent registry (from file we just added) ===
+from ai_registry import get_tab_spec, list_intents
 
-    _scan_files()
-    by_intent: Dict[str, Dict[str, Any]] = {}
-    for path in _cache["files"]:
-        try:
-            spec = _load_yaml(path)
-            intent = spec.get("intent")
-            if isinstance(intent, str) and intent.strip():
-                by_intent[intent.strip()] = spec
-        except Exception:
-            # ignore malformed files
-            pass
-    _cache["by_intent"] = by_intent
+# === Helpers ===
+def load_json(path: Path):
+    if not path.exists():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
 
-def list_intents() -> List[str]:
-    _refresh_cache_if_needed()
-    return sorted(_cache["by_intent"].keys())
+def get_profile(company_id: str) -> dict:
+    return load_json(DATA_DIR / company_id / "profile.json")
 
-def get_tab_spec(intent: str) -> Optional[Dict[str, Any]]:
-    _refresh_cache_if_needed()
-    return _cache["by_intent"].get(intent)
+def get_financials(company_id: str) -> dict:
+    # TODO: replace with your real QuickBooks fetch
+    return {
+        "financial_overview": {
+            "revenue_mtd": 31666.67,
+            "net_income_mtd": -3166.67,
+            "cash_available": 52000
+        }
+    }
+
+def call_orchestrator(tab_spec: dict, context: dict) -> dict:
+    # Threads API (simple). If you already use Responses API, swap it in here.
+    thread = client.beta.threads.create(
+        messages=[{"role":"user","content":json.dumps({"tab_spec": tab_spec, "context": context})}]
+    )
+    run = client.beta.threads.runs.create(thread_id=thread.id, assistant_id=ASSISTANT_ID_ORCH)
+    # In your environment this returns synchronously; otherwise you'd poll until completed.
+    run = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
+    msgs = client.beta.threads.messages.list(thread_id=thread.id)
+    content = msgs.data[0].content[0].text.value
+    return json.loads(content)
+
+# === Routes ===
+@app.get("/health")
+def health():
+    return {"ok": True}
+
+@router.get("/intents")
+def intents():
+    return {"intents": list_intents()}
+
+@router.post("/api/intent")
+def api_intent(payload: dict):
+    intent      = payload.get("intent")
+    company_id  = payload.get("company_id", "demo")
+    user_input  = payload.get("input", {})
+
+    tab_spec = get_tab_spec(intent)
+    if not tab_spec:
+        raise HTTPException(
+            status_code=400,
+            detail={"error": f"Unknown intent: {intent}", "available_intents": list_intents()}
+        )
+
+    profile    = get_profile(company_id)
+    financials = get_financials(company_id)
+
+    context = {
+        "company_id": company_id,
+        "intent": intent,
+        "input": user_input,
+        "profile": profile,
+        "financials": financials,
+        "spec_dir": str(AI_TABS_DIR)
+    }
+    return call_orchestrator(tab_spec, context)
+
+app.include_router(router)
