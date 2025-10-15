@@ -1,5 +1,9 @@
-# /.github/workflows/one-button-build.yml
 name: One-Button Build
+
+# ✅ Needed for PR creation/update
+permissions:
+  contents: write
+  pull-requests: write
 
 on:
   workflow_dispatch: {}
@@ -8,16 +12,17 @@ on:
       - "ai/tabs/*.yaml"
       - "spec/**"
       - "ops/generate_from_spec.py"
+      - ".github/workflows/one-button-build.yml"
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -45,4 +50,6 @@ jobs:
             - Regenerated `ai/index.json`
           labels: |
             build
-          author: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
+          add-paths: |
+            ai/**
+            spec/**
