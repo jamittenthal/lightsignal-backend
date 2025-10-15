@@ -8,8 +8,12 @@ from fastapi.middleware.cors import CORSMiddleware
 BACKEND_DIR = Path(__file__).resolve().parent
 REPO_ROOT   = BACKEND_DIR.parent
 
-OPENAI_API_KEY     = os.getenv("OPENAI_API_KEY")      # may be None
-ASSISTANT_ID_ORCH  = os.getenv("ASSISTANT_ID_ORCH")   # may be None
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # may be None
+# Accept either env var name for the assistant ID
+ASSISTANT_ID = (
+    os.getenv("ASSISTANT_ID_ORCH")
+    or os.getenv("ASST_ORCHESTRATOR_ID")
+)
 
 AI_TABS_DIR = REPO_ROOT / "ai" / "tabs"               # expects /ai/tabs/*.yaml at repo root
 DATA_DIR    = REPO_ROOT / "data" / "companies"        # expects /data/companies/<id>/profile.json
@@ -17,7 +21,7 @@ DATA_DIR    = REPO_ROOT / "data" / "companies"        # expects /data/companies/
 # ---------- App ----------
 app = FastAPI(title="LightSignal Backend")
 
-# CORS (allow your Vercel URL; "*" is fine for quick testing)
+# CORS (allow your Vercel URL; "*" is fine for testing)
 FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "*")
 app.add_middleware(
     CORSMiddleware,
@@ -27,7 +31,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ---------- OpenAI client (lazy / optional) ----------
+# ---------- OpenAI client (lazy) ----------
 _openai_client = None
 def get_openai_client():
     global _openai_client
@@ -62,11 +66,11 @@ def get_financials(company_id: str) -> dict:
     }
 
 def call_orchestrator(tab_spec: dict, context: dict) -> dict:
-    # If OpenAI is not configured yet, return a friendly stub so UI/dev can proceed
-    if not OPENAI_API_KEY or not ASSISTANT_ID_ORCH:
+    # If OpenAI not configured yet, return stub so you can still test end-to-end
+    if not OPENAI_API_KEY or not ASSISTANT_ID:
         return {
             "stub": True,
-            "message": "OpenAI not configured (missing OPENAI_API_KEY or ASSISTANT_ID_ORCH).",
+            "message": "OpenAI not configured (missing OPENAI_API_KEY or Assistant ID).",
             "echo": {"tab_spec_present": bool(tab_spec), "context_keys": list(context.keys())}
         }
 
@@ -75,8 +79,7 @@ def call_orchestrator(tab_spec: dict, context: dict) -> dict:
     thread = client.beta.threads.create(
         messages=[{"role":"user","content":json.dumps({"tab_spec": tab_spec, "context": context})}]
     )
-    run = client.beta.threads.runs.create(thread_id=thread.id, assistant_id=ASSISTANT_ID_ORCH)
-    # In your env this returns quickly; otherwise you would poll until completed.
+    run = client.beta.threads.runs.create(thread_id=thread.id, assistant_id=ASSISTANT_ID)
     run = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
     msgs = client.beta.threads.messages.list(thread_id=thread.id)
     content = msgs.data[0].content[0].text.value
@@ -128,5 +131,9 @@ def debug():
         "exists_data_dir": DATA_DIR.exists(),
         "intents_now": list_intents(),
         "has_openai_key": bool(OPENAI_API_KEY),
-        "has_assistant_id": bool(ASSISTANT_ID_ORCH),
+        "has_assistant_id": bool(ASSISTANT_ID),
+        "assistant_id_env_used": (
+            "ASSISTANT_ID_ORCH" if os.getenv("ASSISTANT_ID_ORCH")
+            else ("ASST_ORCHESTRATOR_ID" if os.getenv("ASST_ORCHESTRATOR_ID") else None)
+        ),
     }
