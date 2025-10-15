@@ -1,0 +1,28 @@
+intent: fraud_compliance
+summary: "Fraud risk score, compliance checks, alerts, and actions."
+inputs: {}
+output_schema:
+  kpis:
+    fraud_risk_score: number
+    compliance_score: number
+    active_alerts: number
+  alerts:
+    - id: string
+      category: string
+      detail: string
+      recommended_action: string
+  last_scan: string
+  next_actions: [string]
+  notes: string
+rules:
+  - "STRICT JSON. List suspicious transactions or expiring items when relevant."
+provenance:
+  baseline_source: "transactions|permits|tax|manual"
+examples:
+  - input: {}
+    output:
+      kpis:{fraud_risk_score:34, compliance_score:78, active_alerts:2}
+      alerts:[{id:"TXN-889", category:"transactions", detail:"Unusual vendor refund", recommended_action:"Verify vendor and receipt"}]
+      last_scan:"2025-10-14"
+      next_actions:["Upload permits expiring in 60 days"]
+      notes:"Heuristics only—requires human review."
