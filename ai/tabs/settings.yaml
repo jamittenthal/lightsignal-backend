@@ -1,29 +1,28 @@
 intent: settings
-summary: "Account, data connections, billing, and preferences."
+summary: Account, data connections, billing, and preferences.
 inputs: {}
 output_schema:
   connections:
-    - name: string
-      status: string     # connected|error|not_connected
-      last_sync: string
+  - name: string
+    status: string
+    last_sync: string
   preferences:
-    - key: string
-      value: string
+  - key: string
+    value: string
   billing:
     plan: string
     next_invoice_date: string
     est_amount_usd: number
-  next_actions: [string]
+  next_actions:
+  - string
   notes: string
 rules:
-  - "STRICT JSON. Do not display secrets."
+- STRICT JSON. Do not display secrets.
 provenance:
-  baseline_source: "app|manual"
+  baseline_source: app|manual
 examples:
-  - input: {}
-    output:
-      connections:[{name:"QuickBooks", status:"connected", last_sync:"2025-10-14"}]
-      preferences:[{key:"currency", value:"USD"}]
-      billing:{plan:"Pro", next_invoice_date:"2025-11-01", est_amount_usd:49}
-      next_actions:["Reconnect failed Stripe feed"]
-      notes:"Syncs hourly when connected."
+- input: {}
+  output: connections:[{name:"QuickBooks", status:"connected", last_sync:"2025-10-14"}]
+    preferences:[{key:"currency", value:"USD"}] billing:{plan:"Pro", next_invoice_date:"2025-11-01",
+    est_amount_usd:49} next_actions:["Reconnect failed Stripe feed"] notes:"Syncs
+    hourly when connected."

@@ -1,5 +1,5 @@
 intent: financial_overview
-summary: "Financial statements, ratios, trends, cash runway."
+summary: Financial statements, ratios, trends, cash runway.
 inputs: {}
 output_schema:
   kpis:
@@ -10,22 +10,43 @@ output_schema:
     cash_available: number
     runway_months: number
   sections:
-    - id: string
-      title: string
-      data: object
-  next_actions: [string]
+  - id: string
+    title: string
+    data: object
+  next_actions:
+  - string
   notes: string
 rules:
-  - "STRICT JSON. Provide sections: income_statement, balance_sheet, cash_flow, ratios, trends."
-  - "Explain assumptions in notes."
+- 'STRICT JSON. Provide sections: income_statement, balance_sheet, cash_flow, ratios,
+  trends.'
+- Explain assumptions in notes.
 provenance:
-  baseline_source: "quickbooks|playground|manual"
+  baseline_source: quickbooks|playground|manual
 examples:
-  - input: {}
-    output:
-      kpis: {revenue_mtd: 31666.67, revenue_change_pct: -0.10, net_income_mtd: -3166.67, margin_pct: -10, cash_available: 52000, runway_months: 5.8}
-      sections:
-        - {id:"income_statement", title:"Income Statement", data:{period:"MTD", totals:{revenue:31666.67, cogs:14000, opex:20833.34}}}
-        - {id:"ratios", title:"Key Ratios", data:{current_ratio:1.8, gross_margin_pct:55.8}}
-      next_actions: ["Review top-5 expense drivers", "Set monthly margin target"]
-      notes: "Runway uses trailing 3-month avg net burn."
+- input: {}
+  output:
+    kpis:
+      revenue_mtd: 31666.67
+      revenue_change_pct: -0.1
+      net_income_mtd: -3166.67
+      margin_pct: -10
+      cash_available: 52000
+      runway_months: 5.8
+    sections:
+    - id:"income_statement": null
+      title:"Income Statement": null
+      data:
+        period:"MTD": null
+        totals:
+          revenue:31666.67: null
+          cogs:14000: null
+          opex:20833.34: null
+    - id:"ratios": null
+      title:"Key Ratios": null
+      data:
+        current_ratio:1.8: null
+        gross_margin_pct:55.8: null
+    next_actions:
+    - Review top-5 expense drivers
+    - Set monthly margin target
+    notes: Runway uses trailing 3-month avg net burn.

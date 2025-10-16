@@ -1,0 +1,21 @@
+{
+  "intents": [
+    "asset_management",
+    "business_health",
+    "business_insights",
+    "business_profile",
+    "customer_reviews_reputation",
+    "dashboard",
+    "debt_management",
+    "demand_forecasting",
+    "financial_overview",
+    "fraud_compliance",
+    "inventory_multilocation",
+    "opportunities",
+    "scenario_planning_lab",
+    "settings",
+    "success_planning_exit_readiness",
+    "tax_optimization",
+    "user_management"
+  ]
+}

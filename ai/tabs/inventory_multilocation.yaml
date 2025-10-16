@@ -1,7 +1,9 @@
 intent: inventory_multilocation
-summary: "Inventory levels, turns, and transfers across locations."
+summary: Inventory levels, turns, and transfers across locations.
 inputs:
-  locations: {type: array, required: false}
+  locations:
+    type: array
+    required: false
 output_schema:
   kpis:
     items_count: number
@@ -9,20 +11,24 @@ output_schema:
     turns_ytd: number
     stockout_risk_count: number
   locations:
-    - code: string
-      name: string
-      items_low_stock: number
-      transfer_recommendations: [string]
-  next_actions: [string]
+  - code: string
+    name: string
+    items_low_stock: number
+    transfer_recommendations:
+    - string
+  next_actions:
+  - string
   notes: string
 rules:
-  - "STRICT JSON. Highlight low-stock and transfer suggestions."
+- STRICT JSON. Highlight low-stock and transfer suggestions.
 provenance:
-  baseline_source: "quickbooks|pos|manual"
+  baseline_source: quickbooks|pos|manual
 examples:
-  - input: {locations:["AUS","DAL"]}
-    output:
-      kpis:{items_count:480, value_total:210000, turns_ytd:4.2, stockout_risk_count:7}
-      locations:[{code:"AUS", name:"Austin", items_low_stock:4, transfer_recommendations:["Move 20 units SKU-123 from DAL"]}]
-      next_actions:["Place reorder for SKU-123"]
-      notes:"Lead times from vendor history."
+- input:
+    locations:
+    - AUS
+    - DAL
+  output: kpis:{items_count:480, value_total:210000, turns_ytd:4.2, stockout_risk_count:7}
+    locations:[{code:"AUS", name:"Austin", items_low_stock:4, transfer_recommendations:["Move
+    20 units SKU-123 from DAL"]}] next_actions:["Place reorder for SKU-123"] notes:"Lead
+    times from vendor history."

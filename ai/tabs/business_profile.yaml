@@ -1,5 +1,5 @@
 intent: business_profile
-summary: "Single source of truth for company profile (industry, location, priorities)."
+summary: Single source of truth for company profile (industry, location, priorities).
 inputs: {}
 output_schema:
   profile:
@@ -7,20 +7,25 @@ output_schema:
     name: string
     naics: string
     industry: string
-    locations: [string]
+    locations:
+    - string
     timezone: string
-    customer_segments: [string]
-    priorities: [string]
+    customer_segments:
+    - string
+    priorities:
+    - string
     seasonality_notes: string
     pricing_model: string
-    risk_flags: [string]
+    risk_flags:
+    - string
     goals_next_12m:
-      - goal: string
-        kpi: string
-  next_actions: [string]
+    - goal: string
+      kpi: string
+  next_actions:
+  - string
   notes: string
 rules:
-  - "STRICT JSON. Reflect exactly what's in data/companies/<company_id>/profile.json."
-  - "If fields are missing, return nulls/empties and say so in notes."
+- STRICT JSON. Reflect exactly what's in data/companies/<company_id>/profile.json.
+- If fields are missing, return nulls/empties and say so in notes.
 provenance:
-  baseline_source: "profile_json|manual"
+  baseline_source: profile_json|manual
