@@ -1,0 +1,69 @@
+{
+  "assets": [
+    { "asset_id": "TRK-101", "name": "Ford F-150", "category": "vehicle", "site": "Austin Yard", "status": "active", "odometer": 61250, "cost": 45000, "salvage": 5000, "useful_life_months": 84, "warranty_expires": "2026-06-01", "insurance_expires": "2025-12-15" },
+    { "asset_id": "TRK-102", "name": "Freightliner M2", "category": "vehicle", "site": "Austin Yard", "status": "active", "odometer": 120400, "cost": 78000, "salvage": 8000, "useful_life_months": 96, "warranty_expires": "2024-12-01", "insurance_expires": "2026-02-10" },
+    { "asset_id": "TRK-103", "name": "Ford Transit Van", "category": "vehicle", "site": "Downtown Hub", "status": "active", "odometer": 89300, "cost": 38000, "salvage": 4000, "useful_life_months": 72, "warranty_expires": "2025-11-15", "insurance_expires": "2025-12-31" },
+    { "asset_id": "TRK-104", "name": "Isuzu NPR", "category": "vehicle", "site": "Austin Yard", "status": "maintenance", "odometer": 145600, "cost": 65000, "salvage": 6500, "useful_life_months": 96, "warranty_expires": "2024-08-01", "insurance_expires": "2026-01-20" },
+    { "asset_id": "GEN-01", "name": "Backup Generator", "category": "equipment", "site": "HQ", "status": "maintenance", "odometer": null, "cost": 12000, "salvage": 1000, "useful_life_months": 60, "warranty_expires": "2025-11-20", "insurance_expires": "2025-11-01" },
+    { "asset_id": "LIFT-01", "name": "Forklift Cat 2C5000", "category": "equipment", "site": "Warehouse A", "status": "active", "odometer": null, "cost": 28000, "salvage": 3000, "useful_life_months": 84, "warranty_expires": "2026-03-15", "insurance_expires": "2026-05-01" },
+    { "asset_id": "CRANE-01", "name": "Mobile Crane 15T", "category": "equipment", "site": "Austin Yard", "status": "active", "odometer": null, "cost": 125000, "salvage": 15000, "useful_life_months": 120, "warranty_expires": "2027-01-01", "insurance_expires": "2026-12-15" }
+  ],
+  "work_orders": [
+    { "wo_id": "WO-2201", "asset_id": "TRK-102", "priority": "high", "summary": "Brake replacement", "status": "open", "created_at": "2025-09-20T08:00:00Z", "closed_at": null },
+    { "wo_id": "WO-2202", "asset_id": "GEN-01", "priority": "medium", "summary": "Annual load test", "status": "closed", "created_at": "2025-07-01T09:00:00Z", "closed_at": "2025-07-01T12:00:00Z" },
+    { "wo_id": "WO-2203", "asset_id": "TRK-104", "priority": "high", "summary": "Engine overhaul", "status": "open", "created_at": "2025-10-15T10:30:00Z", "closed_at": null },
+    { "wo_id": "WO-2204", "asset_id": "TRK-101", "priority": "low", "summary": "Oil change", "status": "closed", "created_at": "2025-09-05T08:00:00Z", "closed_at": "2025-09-05T10:00:00Z" },
+    { "wo_id": "WO-2205", "asset_id": "LIFT-01", "priority": "medium", "summary": "Hydraulic fluid leak", "status": "open", "created_at": "2025-10-18T14:00:00Z", "closed_at": null }
+  ],
+  "maintenance_plans": [
+    { "plan_id": "MP-1", "asset_id": "TRK-101", "type": "meter", "interval": 5000, "task": "Oil & filter" },
+    { "plan_id": "MP-2", "asset_id": "TRK-102", "type": "calendar", "interval": 180, "task": "Brake inspection" },
+    { "plan_id": "MP-3", "asset_id": "TRK-103", "type": "meter", "interval": 7500, "task": "Transmission service" },
+    { "plan_id": "MP-4", "asset_id": "GEN-01", "type": "calendar", "interval": 90, "task": "Load test & inspection" },
+    { "plan_id": "MP-5", "asset_id": "LIFT-01", "type": "meter", "interval": 250, "task": "Hydraulic system check" },
+    { "plan_id": "MP-6", "asset_id": "CRANE-01", "type": "calendar", "interval": 365, "task": "Annual certification" }
+  ],
+  "documents": [
+    { "doc_id": "D-1", "asset_id": "TRK-101", "type": "registration", "text": "Registration expires 2025-12-01" },
+    { "doc_id": "D-2", "asset_id": "TRK-102", "type": "warranty", "text": "Warranty expiration: 2024-12-01" },
+    { "doc_id": "D-3", "asset_id": "CRANE-01", "type": "certification", "text": "DOT crane certification expires January 1, 2027" },
+    { "doc_id": "D-4", "asset_id": "LIFT-01", "type": "inspection", "text": "OSHA forklift inspection valid until March 2026" }
+  ],
+  "utilization": {
+    "TRK-101": [ 
+      { "ts": "2025-10-01T00:00:00Z", "active_hours": 120, "available_hours": 168 }, 
+      { "ts": "2025-09-01T00:00:00Z", "active_hours": 110, "available_hours": 168 } 
+    ],
+    "TRK-102": [ 
+      { "ts": "2025-10-01T00:00:00Z", "active_hours": 80, "available_hours": 168 }, 
+      { "ts": "2025-09-01T00:00:00Z", "active_hours": 90, "available_hours": 168 } 
+    ],
+    "TRK-103": [
+      { "ts": "2025-10-01T00:00:00Z", "active_hours": 135, "available_hours": 168 },
+      { "ts": "2025-09-01T00:00:00Z", "active_hours": 128, "available_hours": 168 }
+    ],
+    "LIFT-01": [
+      { "ts": "2025-10-01T00:00:00Z", "active_hours": 95, "available_hours": 168 },
+      { "ts": "2025-09-01T00:00:00Z", "active_hours": 102, "available_hours": 168 }
+    ],
+    "CRANE-01": [
+      { "ts": "2025-10-01T00:00:00Z", "active_hours": 45, "available_hours": 168 },
+      { "ts": "2025-09-01T00:00:00Z", "active_hours": 52, "available_hours": 168 }
+    ]
+  },
+  "depreciation": {
+    "TRK-101": { "cost": 45000, "salvage": 5000, "useful_life_months": 84 },
+    "TRK-102": { "cost": 78000, "salvage": 8000, "useful_life_months": 96 },
+    "TRK-103": { "cost": 38000, "salvage": 4000, "useful_life_months": 72 },
+    "TRK-104": { "cost": 65000, "salvage": 6500, "useful_life_months": 96 },
+    "GEN-01": { "cost": 12000, "salvage": 1000, "useful_life_months": 60 },
+    "LIFT-01": { "cost": 28000, "salvage": 3000, "useful_life_months": 84 },
+    "CRANE-01": { "cost": 125000, "salvage": 15000, "useful_life_months": 120 }
+  },
+  "telemetry_samples": [
+    { "asset_id": "TRK-101", "ts": "2025-10-20T12:00:00Z", "odometer": 61250, "fuel": 0.56, "gps": {"lat": 30.2672, "lng": -97.7431} },
+    { "asset_id": "TRK-101", "ts": "2025-10-20T13:00:00Z", "odometer": 61265, "fuel": 0.52, "gps": {"lat": 30.2851, "lng": -97.7394} },
+    { "asset_id": "TRK-102", "ts": "2025-10-20T12:00:00Z", "odometer": 120400, "fuel": 0.38, "gps": {"lat": 30.2945, "lng": -97.7390}, "dtc": ["P0171"] },
+    { "asset_id": "TRK-103", "ts": "2025-10-20T14:30:00Z", "odometer": 89300, "fuel": 0.71, "gps": {"lat": 30.2669, "lng": -97.7428} }
+  ]
+}

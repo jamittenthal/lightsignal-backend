@@ -209,3 +209,177 @@ class BusinessInsightsResponse(BaseModel):
     meta: MetaTop = Field(..., alias="_meta")
 
     model_config = {"populate_by_name": True}
+
+
+# ----------------- Asset Management Models -----------------
+from datetime import datetime
+
+
+class Asset(BaseModel):
+    asset_id: str
+    name: Optional[str]
+    category: Optional[str]
+    site: Optional[str]
+    status: Optional[str]
+    odometer: Optional[float]
+    cost: Optional[float]
+    salvage: Optional[float]
+    useful_life_months: Optional[int]
+    warranty_expires: Optional[str]
+    insurance_expires: Optional[str]
+
+
+class WorkOrder(BaseModel):
+    wo_id: str
+    asset_id: str
+    priority: Optional[str]
+    summary: Optional[str]
+    status: Optional[str]
+    created_at: Optional[str]
+    closed_at: Optional[str]
+
+
+class MaintenancePlan(BaseModel):
+    plan_id: Optional[str]
+    asset_id: str
+    type: str
+    interval: Optional[int]
+    task: Optional[str]
+
+
+class TelemetrySample(BaseModel):
+    ts: str
+    odometer: Optional[float]
+    fuel: Optional[float]
+    gps: Optional[Dict[str, float]]
+    dtc: Optional[List[str]]
+
+
+class AssetsFullRequest(BaseModel):
+    company_id: str
+    range: Optional[str]
+    include_registry: Optional[bool] = True
+    include_maintenance: Optional[bool] = True
+    include_telematics: Optional[bool] = True
+    include_documents: Optional[bool] = True
+
+
+class ReplaceVsRepairRequest(BaseModel):
+    company_id: str
+    asset_id: str
+    repair_cost_year: float
+    downtime_cost_year: float
+    replacement_cost: float
+    replacement_useful_life_months: int
+    discount_rate_pct: float
+    expected_productivity_gain_pct: float
+
+
+class ReplaceVsRepairResponse(BaseModel):
+    tco_3yr_repair: float
+    tco_3yr_replace: float
+    npv_savings: float
+    payback_months: Optional[int]
+    recommendation: str
+    assumptions: Dict[str, Any]
+    meta: MetaTop = Field(..., alias="_meta")
+
+    model_config = {"populate_by_name": True}
+
+
+class AssetsSearchRequest(BaseModel):
+    company_id: str
+    query: Optional[str] = None
+    filters: Optional[Dict[str, Any]] = None
+
+
+class AssetsSearchResponse(BaseModel):
+    results: List[Asset]
+    meta: MetaTop = Field(..., alias="_meta")
+
+    model_config = {"populate_by_name": True}
+
+
+class ImportRequest(BaseModel):
+    company_id: str
+    rows: List[Dict[str, Any]]
+
+
+class ImportResponse(BaseModel):
+    imported: int
+    skipped: int
+    warnings: List[str]
+    meta: MetaTop = Field(..., alias="_meta")
+
+    model_config = {"populate_by_name": True}
+
+
+class AssetsFullResponse(BaseModel):
+    kpis: Dict[str, Any]
+    integrations: List[str]
+    registry: List[Dict[str, Any]]
+    work_orders: List[Dict[str, Any]]
+    valuation: Dict[str, Any]
+    utilization: Dict[str, Any]
+    alerts: List[Dict[str, Any]]
+    documents: List[Dict[str, Any]]
+    quick_actions: Dict[str, Any]
+    export: Dict[str, Any]
+    meta: MetaTop = Field(..., alias="_meta")
+
+    model_config = {"populate_by_name": True}
+
+
+class WorkOrderCreateRequest(BaseModel):
+    company_id: str
+    asset_id: str
+    priority: Optional[str] = "normal"
+    summary: Optional[str] = ""
+    sla_hours: Optional[int] = None
+
+
+class WorkOrderCreateResponse(BaseModel):
+    wo_id: str
+    status: str
+    meta: MetaTop = Field(..., alias="_meta")
+
+    model_config = {"populate_by_name": True}
+
+
+class MaintenanceScheduleRequest(BaseModel):
+    company_id: str
+    asset_id: str
+    plan: Dict[str, Any]
+
+
+class MaintenanceScheduleResponse(BaseModel):
+    ok: bool
+    meta: MetaTop = Field(..., alias="_meta")
+
+    model_config = {"populate_by_name": True}
+
+
+class TelemetryIngestRequest(BaseModel):
+    company_id: str
+    asset_id: str
+    samples: List[Dict[str, Any]]
+
+
+class TelemetryIngestResponse(BaseModel):
+    ok: bool
+    meta: MetaTop = Field(..., alias="_meta")
+
+    model_config = {"populate_by_name": True}
+
+
+class DocumentExtractRequest(BaseModel):
+    company_id: str
+    docs: List[Dict[str, Any]]
+
+
+class DocumentExtractResponse(BaseModel):
+    documents: List[Dict[str, Any]]
+    meta: MetaTop = Field(..., alias="_meta")
+
+    model_config = {"populate_by_name": True}
+
