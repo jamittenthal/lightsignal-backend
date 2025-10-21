@@ -2,10 +2,25 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, Literal
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(title="LightSignal Backend", version="0.1.0")
+
+# Permissive CORS for now (tighten to Vercel domains later)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+    allow_credentials=False,
+)
 
 @app.get("/health")
 async def health():
+    return {"ok": True}
+
+@app.get("/healthz")
+async def healthz():
     return {"ok": True}
 
 class IntentRequest(BaseModel):
