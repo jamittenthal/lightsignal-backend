@@ -54,7 +54,7 @@ class ScenarioRequest(BaseModel):
 
 class ScenarioChart(BaseModel):
     name: str
-    points: List[Dict[str, float]]
+    points: List[Dict[str, Any]]
 
 class ScenarioBlock(BaseModel):
     revenue: float
@@ -67,3 +67,59 @@ class ScenarioResponse(BaseModel):
     scenario: ScenarioBlock
     visuals: List[ScenarioChart]
     insights: List[str]
+
+# Scenario Planning Lab Models
+class ScenarioLabRequest(BaseModel):
+    company_id: str
+    scenario_name: str
+    description: Optional[str] = None
+    inputs: ScenarioInputs
+    horizon_months: Optional[int] = 12
+    run_monte_carlo: Optional[bool] = False
+    run_stress_test: Optional[bool] = False
+
+class MonteCarloResult(BaseModel):
+    p5: float  # 5th percentile
+    p50: float  # 50th percentile (median)
+    p95: float  # 95th percentile
+    metric: str
+
+class StressTestResult(BaseModel):
+    scenario_name: str
+    revenue_impact_pct: float
+    cost_impact_pct: float
+    cash_impact: float
+    dscr: Optional[float] = None  # Debt Service Coverage Ratio
+    icr: Optional[float] = None  # Interest Coverage Ratio
+
+class ScenarioLabKPIs(BaseModel):
+    revenue_delta_pct: float
+    revenue_delta_dollars: float
+    net_income_delta_pct: float
+    margin_delta_pts: float
+    cash_flow_delta: float
+    runway_delta_months: float
+    roi_pct: Optional[float] = None
+    payback_months: Optional[float] = None
+
+class PeerBenchmark(BaseModel):
+    metric: str
+    your_value: float
+    peer_median: float
+    peer_p75: float
+    percentile: float
+    source: str
+
+class ScenarioLabResponse(BaseModel):
+    scenario_name: str
+    base: ScenarioBlock
+    scenario: ScenarioBlock
+    kpis: ScenarioLabKPIs
+    visuals: List[ScenarioChart]
+    monte_carlo: Optional[List[MonteCarloResult]] = None
+    stress_tests: Optional[List[StressTestResult]] = None
+    peer_benchmarks: Optional[List[PeerBenchmark]] = None
+    recommendations: List[str]
+    risks: List[str]
+    provenance: Dict[str, Any]
+    confidence: float
