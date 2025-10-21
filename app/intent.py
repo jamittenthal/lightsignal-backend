@@ -194,4 +194,33 @@ async def intent_router(req: IntentRequest):
                 raise HTTPException(status_code=500, detail=f"research_scout_error: {e}")
         raise HTTPException(status_code=400, detail="Research Scout assistant not configured")
 
+    # ---- Business Insights (new) ----
+    if intent == "business_insights":
+        from .services.insights_engine import compute_insights
+        import json
+        
+        # Load profile for demo
+        if company_id == "demo":
+            try:
+                with open("data/companies/demo/profile.json","r") as f:
+                    profile = json.load(f)
+            except Exception:
+                profile = {"company_id": company_id, "naics":"","size":"","region":"","employees":10}
+            # Demo series
+            series = [
+                {"month":"2025-06","revenue":80000.0,"cogs":30000.0,"opex":25000.0,"cash":50000},
+                {"month":"2025-07","revenue":85000.0,"cogs":32000.0,"opex":26000.0,"cash":52000},
+                {"month":"2025-08","revenue":90000.0,"cogs":33000.0,"opex":27000.0,"cash":54000},
+            ]
+        else:
+            profile = {"company_id": company_id, "naics":"","size":"","region":"","employees":10}
+            series = [{"month":"2025-08","revenue":10000.0,"cogs":4000.0,"opex":3000.0,"cash":10000}]
+        
+        profile.setdefault("employees", 12)
+        profile.setdefault("ar_days", 35)
+        
+        include_peers = input_data.get("include_peers", False)
+        result = compute_insights(company_id, profile, series, include_peers=include_peers)
+        return {"intent": intent, "company_id": company_id, "result": result}
+
     raise HTTPException(status_code=400, detail=f"Unknown intent: {intent}")

@@ -14,6 +14,7 @@ from .routes_profile import router as profile_router
 from .routes_watchlist import router as watch_router
 from .routes_ops import router as ops_router
 from .routes_scenario_lab import router as scenario_lab_router
+from .routers.insights import router as insights_router
 
 app = FastAPI(title="LightSignal API", version="0.2.0")
 
@@ -55,3 +56,4 @@ app.include_router(profile_router)
 app.include_router(watch_router)
 app.include_router(ops_router)
 app.include_router(scenario_lab_router)
+app.include_router(insights_router)

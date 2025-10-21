@@ -123,3 +123,89 @@ class ScenarioLabResponse(BaseModel):
     risks: List[str]
     provenance: Dict[str, Any]
     confidence: float
+
+# ----------------- Business Insights Models -----------------
+from enum import Enum
+
+
+class StateEnum(str, Enum):
+    good = "good"
+    stable = "stable"
+    caution = "caution"
+    bad = "bad"
+
+
+class BusinessInsightsRequest(BaseModel):
+    company_id: str
+    range: str = Field(description="MTD|QTD|YTD")
+    horizon: str = Field(description="3m|6m|12m|24m|60m")
+    include_peers: bool = False
+
+
+class MetaProvenance(BaseModel):
+    baseline_source: str
+    sources: List[str] = []
+    notes: List[str] = []
+    confidence: str = "medium"
+    used_priors: bool = False
+    prior_weight: float = 0.0
+
+
+class MetaTop(BaseModel):
+    source: str = "lightsignal.orchestrator"
+    confidence: str = "medium"
+    latency_ms: int = 0
+    provenance: MetaProvenance
+
+
+class Recommendation(BaseModel):
+    title: str
+    description: Optional[str]
+    expected_impact: Optional[str]
+    confidence: str
+    timeframe: str
+    peer_validation: Optional[Dict[str, Any]] = None
+    lever: Optional[Dict[str, Any]] = None
+
+
+class OpportunityItem(BaseModel):
+    title: str
+    category: str
+    fit_score: Optional[float]
+    est_roi: Optional[float]
+    required_capital: Optional[float]
+    market_size: Optional[float]
+
+
+class HeatmapBlock(BaseModel):
+    department: str
+    metric: str
+    state: StateEnum
+
+
+class EfficiencyROI(BaseModel):
+    efficiency_score: float
+    growth_opportunity_index: float
+    details: Dict[str, Any]
+
+
+class ChartsBlock(BaseModel):
+    profit_driver_breakdown: List[Dict[str, Any]] = []
+    peer_radar: List[Dict[str, Any]] = []
+    opportunity_matrix: List[Dict[str, Any]] = []
+    efficiency_trendline: List[Dict[str, Any]] = []
+
+
+class BusinessInsightsResponse(BaseModel):
+    kpis: Dict[str, Any]
+    current_pulse: Dict[str, Any]
+    internal_analysis: Dict[str, Any]
+    peers: Optional[Dict[str, Any]]
+    recommendations: List[Recommendation]
+    efficiency_roi: EfficiencyROI
+    opportunities: List[OpportunityItem]
+    charts: ChartsBlock
+    export: Dict[str, Any]
+    meta: MetaTop = Field(..., alias="_meta")
+
+    model_config = {"populate_by_name": True}
