@@ -223,4 +223,24 @@ async def intent_router(req: IntentRequest):
         result = compute_insights(company_id, profile, series, include_peers=include_peers)
         return {"intent": intent, "company_id": company_id, "result": result}
 
+    # ---- Asset Management (new) ----
+    if intent == "asset_management":
+        from .services.assets_engine import full_overview
+        req = {
+            "company_id": company_id,
+            "range": input_data.get("range", "30d"),
+            "include_registry": input_data.get("include_registry", True),
+            "include_maintenance": input_data.get("include_maintenance", True),
+            "include_telematics": input_data.get("include_telematics", True),
+            "include_documents": input_data.get("include_documents", True)
+        }
+        result = full_overview(req)
+        # Return minimal subset for intent fallback
+        minimal = {
+            "kpis": result.get("kpis"),
+            "registry": result.get("registry", [])[:5],  # first 5 assets
+            "alerts": result.get("alerts", [])
+        }
+        return {"intent": intent, "company_id": company_id, "result": minimal}
+
     raise HTTPException(status_code=400, detail=f"Unknown intent: {intent}")
