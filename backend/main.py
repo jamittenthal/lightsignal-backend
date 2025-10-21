@@ -6,12 +6,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="LightSignal Backend", version="0.1.0")
 
-# Permissive CORS for now (tighten to Vercel domains later)
+# Strict CORS configuration for localhost and Vercel preview domains
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=["http://localhost:3000", "https://localhost:3000"],
+    allow_origin_regex=r"^https://[a-z0-9-]+-lightsignals-projects\.vercel\.app$",
+    allow_methods=["POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
     allow_credentials=False,
 )
 
