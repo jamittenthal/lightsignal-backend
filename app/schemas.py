@@ -383,3 +383,121 @@ class DocumentExtractResponse(BaseModel):
 
     model_config = {"populate_by_name": True}
 
+
+# ----------------- Tax Optimization Models -----------------
+class TaxFullRequest(BaseModel):
+    company_id: str
+    year: int
+    include_peers: Optional[bool] = False
+    include_assets: Optional[bool] = False
+    include_entity_analysis: Optional[bool] = False
+    range: Optional[str] = Field(description="MTD|QTD|YTD", default="YTD")
+
+
+class TaxKPI(BaseModel):
+    label: str
+    value: float
+    pct_change: Optional[float] = None
+
+
+class OpportunityDetail(BaseModel):
+    id: str
+    title: str
+    category: str
+    est_savings: float
+    confidence: str
+    notes: Optional[str]
+
+
+class DeductionFinderItem(BaseModel):
+    code: str
+    title: str
+    est_value: float
+    source: Optional[str]
+
+
+class QuarterlyScenarioResult(BaseModel):
+    name: str
+    delta_liability: float
+
+
+class QuarterlyPlanResponse(BaseModel):
+    next_due_date: str
+    estimate_due: float
+    set_aside_weekly: float
+    scenarios: List[QuarterlyScenarioResult]
+    meta: MetaTop = Field(..., alias="_meta")
+
+
+class EntityOption(BaseModel):
+    type: str
+    est_savings_year: float
+    assumptions: Optional[Dict[str, Any]]
+    notes: Optional[str]
+
+
+class EntityAnalysisResponse(BaseModel):
+    current: str
+    options: List[EntityOption]
+    meta: MetaTop = Field(..., alias="_meta")
+
+
+class DepreciationTimelineItem(BaseModel):
+    month: str
+    write_off: float
+
+
+class DepreciationPlanResponse(BaseModel):
+    timeline: List[DepreciationTimelineItem]
+    notes: List[str]
+    meta: MetaTop = Field(..., alias="_meta")
+
+
+class PriorityItem(BaseModel):
+    id: str
+    text: str
+    deadline: Optional[str]
+    assignee: Optional[str]
+
+
+class PrioritiesSaveRequest(BaseModel):
+    company_id: str
+    items: List[PriorityItem]
+
+
+class ExportRequest(BaseModel):
+    company_id: str
+    format: str = Field(description="pdf|csv")
+    variant: str = Field(description="optimization|quarterly")
+
+
+class TaxAskRequest(BaseModel):
+    company_id: str
+    query: str
+    year: Optional[int]
+
+
+class TaxAskResponse(BaseModel):
+    answer: str
+    assumptions: Dict[str, Any]
+    links: List[Dict[str, str]]
+    actions: List[Dict[str, Any]]
+    meta: MetaTop = Field(..., alias="_meta")
+
+
+class TaxFullResponse(BaseModel):
+    kpis: List[TaxKPI]
+    overview: Dict[str, Any]
+    opportunities: List[OpportunityDetail]
+    benchmarks: Dict[str, Any]
+    deduction_finder: List[DeductionFinderItem]
+    quarterly_plan: QuarterlyPlanResponse
+    entity_analysis: EntityAnalysisResponse
+    depreciation: DepreciationPlanResponse
+    priority_actions: List[PriorityItem]
+    coach_examples: List[Dict[str, Any]]
+    export: Dict[str, Any]
+    meta: MetaTop = Field(..., alias="_meta")
+
+    model_config = {"populate_by_name": True}
+

@@ -1,0 +1,17 @@
+{
+  "company_id": "demo",
+  "year": 2025,
+  "entity": "llc_sp",
+  "owner_salary": 65000,
+  "owner_draws": 55000,
+  "ytd": {
+    "revenue": 900000.0,
+    "net_income": 85000.0,
+    "tax_expense": 18000.0,
+    "paid_estimates": 10000.0,
+    "addbacks": 5000.0,
+    "non_deductibles": 2000.0
+  },
+  "assets_map_path": "data/demo/assets.json",
+  "peers": {"industry_median_etr": 0.22}
+}
