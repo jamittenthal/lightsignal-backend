@@ -17,6 +17,7 @@ from .routes_scenario_lab import router as scenario_lab_router
 from .routers.insights import router as insights_router
 from .routers.assets import router as assets_router
 from .routers.tax import router as tax_router
+from .routers.health import router as health_router
 
 app = FastAPI(title="LightSignal API", version="0.2.0")
 
@@ -61,3 +62,4 @@ app.include_router(scenario_lab_router)
 app.include_router(insights_router)
 app.include_router(assets_router)
 app.include_router(tax_router)
+app.include_router(health_router)

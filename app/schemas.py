@@ -211,6 +211,55 @@ class BusinessInsightsResponse(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+# ----------------- Business Health Models -----------------
+
+
+class BusinessHealthRequest(BaseModel):
+    company_id: str
+    range: str = Field(description="30d|90d|12m")
+    include_peers: bool = False
+    include_breakdowns: bool = True
+
+
+class CategoryScore(BaseModel):
+    category: str
+    score: float
+    state: StateEnum
+    drivers: List[Dict[str, Any]] = []
+
+
+class AlertItem(BaseModel):
+    id: str
+    title: str
+    severity: str
+    description: Optional[str]
+    linked_kpis: Optional[List[str]] = None
+
+
+class ExportFlags(BaseModel):
+    pdf_available: bool = True
+    csv_available: bool = False
+
+
+class CoachExample(BaseModel):
+    question: str
+    answer: str
+
+
+class BusinessHealthResponse(BaseModel):
+    kpis: Dict[str, Any]
+    overview: Dict[str, Any]
+    categories: List[CategoryScore]
+    alerts: List[AlertItem]
+    heatmap: List[HeatmapBlock]
+    recommendations: List[Recommendation]
+    coach_examples: List[CoachExample]
+    export: ExportFlags
+    meta: MetaTop = Field(..., alias="_meta")
+
+    model_config = {"populate_by_name": True}
+
+
 # ----------------- Asset Management Models -----------------
 from datetime import datetime
 
