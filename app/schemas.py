@@ -550,3 +550,116 @@ class TaxFullResponse(BaseModel):
 
     model_config = {"populate_by_name": True}
 
+
+# ----------------- Debt Management Models -----------------
+from typing import Literal
+
+
+class DebtAccount(BaseModel):
+    account_id: str
+    type: str  # equipment_loan|vehicle_loan|credit_card|loc
+    name: Optional[str]
+    balance: float
+    rate_pct: float
+    monthly_payment: Optional[float]
+    term_months: Optional[int]
+    orig_balance: Optional[float]
+    orig_term_months: Optional[int]
+    next_due_date: Optional[str]
+    balloon_due_months: Optional[int]
+    variable_rate: Optional[bool] = False
+    limit: Optional[float] = None
+    history: Optional[List[Dict[str, Any]]] = []
+
+
+class DebtFullRequest(BaseModel):
+    company_id: str
+    range: Optional[str] = Field(description="30d|QTD|YTD", default="30d")
+    include_market_rates: Optional[bool] = True
+    include_credit_score: Optional[bool] = True
+    include_integrations: Optional[bool] = True
+
+
+class DebtKPIs(BaseModel):
+    weighted_avg_rate_pct: float
+    total_balance: float
+    monthly_payments: float
+    dti: Optional[float]
+    dscr: Optional[float]
+    utilization_pct: Optional[float]
+
+
+class DebtChartBlock(BaseModel):
+    balance_trend: List[Dict[str, Any]] = []
+    payment_breakdown: List[Dict[str, Any]] = []
+
+
+class DebtOptimizationItem(BaseModel):
+    id: str
+    type: str
+    description: str
+    est_savings_annual: float
+    est_fee: Optional[float]
+    confidence: str
+
+
+class DebtScenarioRequest(BaseModel):
+    company_id: str
+    scenario: str
+    inputs: Dict[str, Any]
+
+
+class DebtScenarioResponse(BaseModel):
+    new_monthly: float
+    interest_saved: float
+    months_earlier: int
+    new_payoff_date: Optional[str]
+    per_account_impacts: List[Dict[str, Any]]
+    meta: MetaTop = Field(..., alias="_meta")
+
+
+class DebtAskRequest(BaseModel):
+    company_id: str
+    query: str
+    filters: Optional[Dict[str, Any]] = None
+
+
+class ConnectorRequest(BaseModel):
+    company_id: str
+    provider: str
+    oauth_stub: Optional[bool] = True
+
+
+class ConnectorResponse(BaseModel):
+    ok: bool
+    status: str
+    meta: MetaTop = Field(..., alias="_meta")
+
+
+class DebtAlert(BaseModel):
+    id: str
+    title: str
+    severity: str
+    description: Optional[str]
+
+
+class CreditScoreBlock(BaseModel):
+    score: int
+    factors: List[Dict[str, Any]]
+
+
+class DebtFullResponse(BaseModel):
+    kpis: DebtKPIs
+    accounts: List[DebtAccount]
+    charts: DebtChartBlock
+    utilization: Dict[str, Any]
+    optimization: List[DebtOptimizationItem]
+    scenarios: List[Dict[str, Any]]
+    risk: Dict[str, Any]
+    credit_score: Optional[CreditScoreBlock]
+    recommendations: List[Recommendation]
+    export: Dict[str, Any]
+    meta: MetaTop = Field(..., alias="_meta")
+
+    model_config = {"populate_by_name": True}
+

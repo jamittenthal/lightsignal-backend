@@ -1,0 +1,73 @@
+{
+  "accounts": [
+    {
+      "account_id": "eqp-001",
+      "type": "equipment_loan",
+      "name": "Boiler Equipment Loan",
+      "balance": 25000.0,
+      "rate_pct": 8.5,
+      "monthly_payment": 520.0,
+      "term_months": 60,
+      "orig_balance": 30000.0,
+      "orig_term_months": 60,
+      "next_due_date": "2026-02-01",
+      "balloon_due_months": null,
+      "variable_rate": false
+    },
+    {
+      "account_id": "veh-001",
+      "type": "vehicle_loan",
+      "name": "Service Van Loan",
+      "balance": 12000.0,
+      "rate_pct": 6.2,
+      "monthly_payment": 360.0,
+      "term_months": 48,
+      "orig_balance": 20000.0,
+      "orig_term_months": 60,
+      "next_due_date": "2025-11-15",
+      "balloon_due_months": null,
+      "variable_rate": false
+    },
+    {
+      "account_id": "card-amex",
+      "type": "credit_card",
+      "name": "Business Amex",
+      "balance": 8200.0,
+      "rate_pct": 24.5,
+      "monthly_payment": 250.0,
+      "term_months": null,
+      "orig_balance": 12000.0,
+      "next_due_date": "2025-10-28",
+      "balloon_due_months": null,
+      "variable_rate": false,
+      "limit": 15000.0
+    },
+    {
+      "account_id": "loc-boa",
+      "type": "loc",
+      "name": "Bank Line of Credit",
+      "balance": 6000.0,
+      "rate_pct": 9.5,
+      "monthly_payment": 150.0,
+      "term_months": null,
+      "orig_balance": 10000.0,
+      "next_due_date": "2026-06-01",
+      "balloon_due_months": null,
+      "variable_rate": true,
+      "limit": 20000.0
+    }
+  ],
+  "market_rate_cache": {
+    "term_refi": 7.1,
+    "loc_refi": 6.0,
+    "auto_refi": 5.5
+  },
+  "credit_score": {
+    "score": 79,
+    "factors": [
+      {"factor":"payment_history","weight":0.4,"note":"on-time"},
+      {"factor":"utilization","weight":0.3,"note":"moderate"},
+      {"factor":"age_of_credit","weight":0.15,"note":"young"}
+    ]
+  }
+}
