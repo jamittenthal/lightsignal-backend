@@ -10,7 +10,7 @@ from .services.benchmarks import vector_benchmarks
 from .services.insights import write_insights
 
 from .intent import router as intent_router
-from .routes_profile import router as profile_router
+from .routers.profile import router as profile_router
 from .routes_watchlist import router as watch_router
 from .routes_ops import router as ops_router
 from .routes_scenario_lab import router as scenario_lab_router

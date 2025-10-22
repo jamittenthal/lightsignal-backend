@@ -1,0 +1,107 @@
+{
+  "general": {
+    "name": "Test"
+  },
+  "industry": {
+    "naics": {
+      "code": "238220",
+      "title": "Plumbing"
+    },
+    "benchmark_set": "bench-238"
+  },
+  "operations": {
+    "employees": 12
+  },
+  "financial": {
+    "last_year_revenue": 1200000
+  },
+  "assets": [],
+  "customers": {
+    "annual_customers": 500
+  },
+  "risk": {
+    "assessments": []
+  },
+  "objectives": {
+    "items": []
+  },
+  "uploads": [
+    {
+      "id": "doc-1761168777",
+      "file": "EIN_Confirmation.pdf",
+      "category": "EIN",
+      "status": "verified",
+      "type": "EIN",
+      "issuer": "IRS",
+      "effective": "2018-04-01",
+      "expiration": null
+    },
+    {
+      "id": "doc-1761168978",
+      "file": "EIN_Confirmation.pdf",
+      "category": "EIN",
+      "status": "verified",
+      "type": "EIN",
+      "issuer": "IRS",
+      "effective": "2018-04-01",
+      "expiration": null
+    },
+    {
+      "id": "doc-1761169033",
+      "file": "EIN_Confirmation.pdf",
+      "category": "EIN",
+      "status": "verified",
+      "type": "EIN",
+      "issuer": "IRS",
+      "effective": "2018-04-01",
+      "expiration": null
+    }
+  ],
+  "completeness": {
+    "percent": 0.65,
+    "missing": [
+      {
+        "section": "General",
+        "item": "name; ein; locations"
+      },
+      {
+        "section": "Assets",
+        "item": "assets"
+      },
+      {
+        "section": "Risk",
+        "item": "assessments"
+      },
+      {
+        "section": "Objectives",
+        "item": "items"
+      }
+    ]
+  },
+  "connectors": {
+    "accounting": {
+      "connected": true,
+      "last_sync": null
+    },
+    "banking": {
+      "connected": false,
+      "last_sync": null
+    },
+    "crm": {
+      "connected": false,
+      "last_sync": null
+    },
+    "payroll": {
+      "connected": false,
+      "last_sync": null
+    },
+    "inventory": {
+      "connected": false,
+      "last_sync": null
+    },
+    "storage": {
+      "connected": false,
+      "last_sync": null
+    }
+  }
+}

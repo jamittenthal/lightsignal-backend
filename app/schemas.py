@@ -663,3 +663,170 @@ class DebtFullResponse(BaseModel):
 
     model_config = {"populate_by_name": True}
 
+# ----------------- Business Profile Models -----------------
+from datetime import date
+
+
+class OwnerItem(BaseModel):
+    id: Optional[str] = None
+    name: Optional[str] = None
+    email: Optional[str] = None
+    percent: Optional[float] = None
+
+
+class LocationItem(BaseModel):
+    id: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    postal_code: Optional[str] = None
+    country: Optional[str] = "US"
+
+
+class GeneralBlock(BaseModel):
+    name: Optional[str] = None
+    entity_type: Optional[str] = None
+    ein: Optional[str] = None
+    locations: List[LocationItem] = []
+    founded: Optional[date] = None
+    timezone: Optional[str] = None
+    currency: Optional[str] = None
+    owners: List[OwnerItem] = []
+
+
+class NAICSResult(BaseModel):
+    code: str
+    title: str
+
+
+class IndustryBlock(BaseModel):
+    naics: Optional[NAICSResult] = None
+    sector: Optional[str] = None
+    subsector: Optional[str] = None
+    business_model: Optional[str] = None
+    categories: List[str] = []
+    benchmark_set: Optional[str] = None
+
+
+class OperationsBlock(BaseModel):
+    employees: Optional[int] = None
+    operating_hours: Optional[str] = None
+    primary_location: Optional[str] = None
+
+
+class FinancialBlock(BaseModel):
+    currency: Optional[str] = None
+    fiscal_year_end: Optional[str] = None
+    last_year_revenue: Optional[float] = None
+
+
+class AssetItem(BaseModel):
+    id: str
+    name: Optional[str] = None
+    category: Optional[str] = None
+    status: Optional[str] = None
+    cost: Optional[float] = None
+
+
+class CustomersBlock(BaseModel):
+    annual_customers: Optional[int] = None
+    concentration_pct: Optional[float] = None
+
+
+class RiskBlock(BaseModel):
+    assessments: List[Dict[str, Any]] = []
+
+
+class ObjectivesBlock(BaseModel):
+    items: List[Dict[str, Any]] = []
+
+
+class UploadItem(BaseModel):
+    id: str
+    file: str
+    category: Optional[str]
+    status: Optional[str]
+    issuer: Optional[str]
+    effective: Optional[str]
+    expiration: Optional[str]
+
+
+class CompletenessBlock(BaseModel):
+    percent: float
+    missing: List[Dict[str, str]] = []
+
+
+class KPIItem(BaseModel):
+    label: str
+    value: Any
+
+
+class ProfileFullRequest(BaseModel):
+    company_id: str
+    include_financial_summary: Optional[bool] = False
+    include_assets: Optional[bool] = False
+    include_benchmarks: Optional[bool] = False
+    include_uploads: Optional[bool] = False
+    include_integrations: Optional[bool] = False
+
+
+class ProfileFullResponse(BaseModel):
+    kpis: List[KPIItem]
+    general: GeneralBlock
+    industry: IndustryBlock
+    operations: OperationsBlock
+    financial: FinancialBlock
+    assets: List[AssetItem]
+    customers: CustomersBlock
+    risk: RiskBlock
+    objectives: ObjectivesBlock
+    uploads: List[UploadItem]
+    completeness: CompletenessBlock
+    meta: MetaTop = Field(..., alias="_meta")
+
+
+class SaveOK(BaseModel):
+    ok: bool
+    meta: MetaTop = Field(..., alias="_meta")
+
+
+class SignedURL(BaseModel):
+    url: str
+
+
+class NAICSSearchRequest(BaseModel):
+    q: str
+    limit: Optional[int] = 8
+
+
+class NAICSSearchResponse(BaseModel):
+    results: List[NAICSResult]
+    meta: MetaTop = Field(..., alias="_meta")
+
+
+class UploadListRequest(BaseModel):
+    company_id: str
+
+
+class UploadUploadRequest(BaseModel):
+    company_id: str
+    file_name: str
+    category: str
+    upload_id: Optional[str] = None
+
+
+class UploadExtractRequest(BaseModel):
+    company_id: str
+    id: str
+
+
+class CompletenessRecalcRequest(BaseModel):
+    company_id: str
+
+
+class ExportRequest(BaseModel):
+    company_id: str
+    format: str
+    include_contacts: Optional[bool] = False
+
+
