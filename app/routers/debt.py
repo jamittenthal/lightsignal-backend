@@ -1,6 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from ..schemas import DebtFullRequest, DebtFullResponse, DebtScenarioRequest, DebtScenarioResponse, DebtAskRequest, ConnectorRequest, ConnectorResponse, DebtAccount
 from ..services.debt_engine import build_full, simulate_scenario, load_demo
+from ..utils_demo import is_demo, meta
+from ..demo_seed import DEMO_DEBT_FULL
 import json
 
 router = APIRouter()
@@ -8,6 +10,12 @@ router = APIRouter()
 
 @router.post("/api/ai/debt/full", response_model=DebtFullResponse)
 async def debt_full(req: DebtFullRequest):
+    # Demo mode check
+    if is_demo(req.company_id):
+        response = DEMO_DEBT_FULL.copy()
+        return meta(response)
+    
+    # Non-demo: existing logic
     if req.company_id == "demo":
         res = build_full(req.company_id, range=req.range, include_market_rates=req.include_market_rates, include_credit_score=req.include_credit_score)
         return res
