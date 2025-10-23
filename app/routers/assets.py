@@ -7,12 +7,20 @@ from ..schemas import (
     DocumentExtractRequest, DocumentExtractResponse
 )
 from ..services.assets_engine import full_overview, search_registry, create_work_order, schedule_maintenance, replace_vs_repair_calc, import_rows, ingest_telemetry
+from ..utils_demo import is_demo, meta
+from ..demo_seed import DEMO_ASSETS_FULL
 
 router = APIRouter()
 
 
 @router.post("/api/ai/assets/full", response_model=AssetsFullResponse)
 async def assets_full(req: AssetsFullRequest):
+    # Demo mode check
+    if is_demo(req.company_id):
+        response = DEMO_ASSETS_FULL.copy()
+        return meta(response)
+    
+    # Non-demo: existing logic
     res = full_overview(req.model_dump())
     return res
 
