@@ -156,9 +156,35 @@ async def intent_router(req: IntentRequest):
     company_id = req.company_id or "demo"
     input_data = req.input or {}
 
+    # ---- Financial Overview (NEW: demo mode support) ----
+    if intent == "financial_overview":
+        if is_demo(company_id):
+            # Demo mode: return seed data
+            response = DEMO_FINANCIAL_OVERVIEW.copy()
+            return {"intent": intent, "company_id": company_id, "result": meta(response)}
+        
+        # Non-demo mode
+        if DEV_NONDEMO_STUB:
+            # Development stub
+            stub = {
+                "kpis": [],
+                "insights": ["Non-demo stub (DEV_NONDEMO_STUB=true)"],
+            }
+            return {"intent": intent, "company_id": company_id, "result": stub, "_meta": {"demo": False, "stub": True}}
+        
+        # TODO: Implement actual financial overview logic for non-demo
+        # For now, fall through to render_financial_overview or return error
+        raise HTTPException(status_code=400, detail="Non-demo financial_overview not yet implemented; use demo company_id")
+
     # ---- Opportunities (Orchestrator → Research Scout under the hood) ----
     if intent == "opportunities":
         region = str(input_data.get("region") or "Austin, TX")
+        
+        # Demo mode check
+        if is_demo(company_id):
+            demo = _demo_opportunities(region)
+            return {"intent": intent, "company_id": company_id, "result": meta(demo)}
+        
         # Try assistant if configured
         if ASST_ORCHESTRATOR_ID:
             try:
@@ -172,7 +198,12 @@ async def intent_router(req: IntentRequest):
             except Exception as e:
                 demo = _demo_opportunities(region)
                 return {"intent": intent, "company_id": company_id, "result": demo, "warning": f"assistant_error: {e}"}
-        # No assistant configured → demo
+        
+        # No assistant configured
+        if DEV_NONDEMO_STUB:
+            return {"intent": intent, "company_id": company_id, "result": {"kpis": {}, "items": []}, "_meta": {"demo": False, "stub": True}}
+        
+        # Fallback to demo
         return {"intent": intent, "company_id": company_id, "result": _demo_opportunities(region)}
 
     # ---- Financial overview via Assistant (optional) ----
