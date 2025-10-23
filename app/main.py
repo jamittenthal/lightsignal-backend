@@ -1,4 +1,5 @@
 # app/main.py
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -19,6 +20,8 @@ from .routers.assets import router as assets_router
 from .routers.tax import router as tax_router
 from .routers.health import router as health_router
 from .routers.debt import router as debt_router
+from .routers.ai_agents import router as ai_agents_router
+from .routers.ai_tabs import router as ai_tabs_router
 
 app = FastAPI(title="LightSignal API", version="0.2.0")
 
@@ -26,9 +29,13 @@ app = FastAPI(title="LightSignal API", version="0.2.0")
 from .middleware.auth import AuthMiddleware
 app.add_middleware(AuthMiddleware)
 
+# CORS configuration from environment
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*")
+origins_list = [origin.strip() for origin in ALLOWED_ORIGINS.split(",")] if ALLOWED_ORIGINS != "*" else ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # tighten to your Vercel domain
+    allow_origins=origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
