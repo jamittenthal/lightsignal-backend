@@ -22,6 +22,7 @@ from .routers.health import router as health_router
 from .routers.debt import router as debt_router
 from .routers.ai_agents import router as ai_agents_router
 from .routers.ai_tabs import router as ai_tabs_router
+from .routers.settings import router as settings_router
 
 app = FastAPI(title="LightSignal API", version="0.2.0")
 
