@@ -7,12 +7,20 @@ from ..schemas import (
 from ..services.tax_engine import (
     tax_full, meta_top, compute_opportunities, compute_quarterly_plan, analyze_entity, plan_depreciation, save_priorities
 )
+from ..utils_demo import is_demo, meta
+from ..demo_seed import DEMO_TAX_FULL
 
 router = APIRouter()
 
 
 @router.post("/api/ai/tax/full", response_model=TaxFullResponse)
 async def tax_full_endpoint(req: TaxFullRequest):
+    # Demo mode check
+    if is_demo(req.company_id):
+        response = DEMO_TAX_FULL.copy()
+        return meta(response)
+    
+    # Non-demo: existing logic
     res = tax_full(req.company_id, req.year, include_peers=req.include_peers, include_assets=req.include_assets, include_entity_analysis=req.include_entity_analysis, range=req.range)
     # Attach provenance from services
     # match schema: quarterly_plan and others expect _meta inside - ensure it's present
