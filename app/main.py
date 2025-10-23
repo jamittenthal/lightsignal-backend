@@ -65,6 +65,11 @@ async def api_scenario(req: ScenarioRequest):
 async def health():
     return {"ok": True}
 
+@app.get("/healthz")
+async def healthz():
+    """Health check endpoint for infrastructure monitoring."""
+    return {"ok": True}
+
 # NEW: feature routers
 app.include_router(intent_router)
 app.include_router(profile_router)
@@ -76,3 +81,5 @@ app.include_router(assets_router)
 app.include_router(tax_router)
 app.include_router(health_router)
 app.include_router(debt_router)
+app.include_router(ai_agents_router)
+app.include_router(ai_tabs_router)
