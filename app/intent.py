@@ -5,12 +5,15 @@ from pydantic import BaseModel
 from typing import Any, Dict, List, Optional
 
 from .openai_client import call_orchestrator, call_finance_analyst, call_research_scout
+from .utils_demo import is_demo, meta
+from .demo_seed import DEMO_FINANCIAL_OVERVIEW
 
 router = APIRouter()
 
 ASST_ORCHESTRATOR_ID = os.getenv("ASST_ORCHESTRATOR_ID", "")
 ASST_FINANCE_ANALYST_ID = os.getenv("ASST_FINANCE_ANALYST_ID", "")
 ASST_RESEARCH_SCOUT_ID = os.getenv("ASST_RESEARCH_SCOUT_ID", "")
+DEV_NONDEMO_STUB = os.getenv("DEV_NONDEMO_STUB", "false").lower() == "true"
 
 # ----------------- Models -----------------
 
