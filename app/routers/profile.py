@@ -15,12 +15,20 @@ from ..schemas import (
     ExportRequest,
 )
 from ..services import profile_engine
+from ..utils_demo import is_demo, meta
+from ..demo_seed import DEMO_PROFILE_FULL
 
 router = APIRouter()
 
 
 @router.post("/api/ai/profile/full", response_model=ProfileFullResponse)
 def profile_full(req: ProfileFullRequest):
+    # Demo mode check
+    if is_demo(req.company_id):
+        response = DEMO_PROFILE_FULL.copy()
+        return meta(response)
+    
+    # Non-demo: existing logic
     res = profile_engine.get_full(
         req.company_id,
         include_financial_summary=req.include_financial_summary,
