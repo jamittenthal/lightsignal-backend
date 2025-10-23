@@ -22,6 +22,10 @@ from .routers.debt import router as debt_router
 
 app = FastAPI(title="LightSignal API", version="0.2.0")
 
+# attach auth middleware (enforces tenancy and demo bypass)
+from .middleware.auth import AuthMiddleware
+app.add_middleware(AuthMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # tighten to your Vercel domain

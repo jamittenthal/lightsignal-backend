@@ -164,7 +164,11 @@ def test_health_coach_examples():
 
 def test_health_non_demo_company():
     req = {"company_id":"test_company","range":"30d","include_peers":False,"include_breakdowns":True}
-    r = client.post("/api/ai/health/full", json=req)
+    # create a token matching middleware default secret (AUTH_JWT_SECRET defaults to 'dev-secret')
+    import jwt
+    token = jwt.encode({"company_id": "test_company"}, "dev-secret", algorithm="HS256")
+    headers = {"Authorization": f"Bearer {token}"}
+    r = client.post("/api/ai/health/full", json=req, headers=headers)
     assert r.status_code == 200
     body = r.json()
     # Should still return valid structure for non-demo companies
